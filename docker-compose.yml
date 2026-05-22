@@ -1,0 +1,136 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: geomarketing-postgres
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: geomarketing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d geomarketing']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: geomarketing-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: geomarketing-rabbitmq
+    restart: always
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    restart: always
+    command: node dist/apps/api-gateway/main.js
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      API_GATEWAY_PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  core-service:
+    build: .
+    container_name: core-service
+    restart: always
+    command: node dist/apps/core-service/main.js
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      CORE_SERVICE_PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+  review-service:
+    build: .
+    container_name: review-service
+    restart: always
+    command: node dist/apps/review-service/main.js
+    ports:
+      - '3002:3002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      REVIEW_SERVICE_PORT: 3002
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+  ai-service:
+    build: .
+    container_name: ai-service
+    restart: always
+    command: node dist/apps/ai-service/main.js
+    ports:
+      - '3003:3003'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      AI_SERVICE_PORT: 3003
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+  integration-service:
+    build: .
+    container_name: integration-service
+    restart: always
+    command: node dist/apps/integration-service/main.js
+    ports:
+      - '3004:3004'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      INTEGRATION_SERVICE_PORT: 3004
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+volumes:
+  postgres_data:
