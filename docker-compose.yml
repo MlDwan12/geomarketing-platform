@@ -117,6 +117,29 @@ services:
       AI_SERVICE_PORT: 3003
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
 
+  map-parser:
+    build: .
+    container_name: map-parser
+    restart: always
+    command: node dist/apps/map-parser/main.js
+    ports:
+      - '3005:3005'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      MAP_PARSER_PORT: 3005
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: geomarketing
+
   integration-service:
     build: .
     container_name: integration-service

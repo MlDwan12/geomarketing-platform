@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrap() {
   const app = await NestFactory.create(MapParserModule);
   const configService = app.get(ConfigService);
-  const port = Number(configService.get('INTEGRATION_SERVICE_PORT')) || 3004;
+  const port = Number(configService.get('MAP_PARSER_PORT')) || 3005;
   const server = app.getHttpServer();
 
   server.keepAliveTimeout = 120_000;

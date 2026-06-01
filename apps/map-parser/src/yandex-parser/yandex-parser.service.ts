@@ -170,7 +170,7 @@ export class YandexParserService {
 
     try {
       browser = await chromium.launch({
-        headless: false,
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-dev-shm-usage',
