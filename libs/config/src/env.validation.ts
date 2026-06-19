@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumberString, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumberString, IsOptional, IsString } from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -10,29 +10,36 @@ export class EnvValidationSchema {
   @IsEnum(NodeEnv)
   NODE_ENV!: NodeEnv;
 
-  @IsNumberString()
-  API_GATEWAY_PORT!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  DATABASE_URL!: string;
-
+  // ── Shared ────────────────────────────────────────────────────────────────
   @IsString()
   @IsNotEmpty()
   RABBITMQ_URL!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  REDIS_HOST!: string;
-
+  // ── api-gateway ───────────────────────────────────────────────────────────
+  @IsOptional()
   @IsNumberString()
-  REDIS_PORT!: string;
+  API_GATEWAY_PORT?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  JWT_ACCESS_SECRET!: string;
+  DATABASE_URL?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  JWT_REFRESH_SECRET!: string;
+  SESSION_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  REDIS_HOST?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  REDIS_PORT?: string;
+
+  // ── core-service ──────────────────────────────────────────────────────────
+  @IsOptional()
+  @IsNumberString()
+  CORE_SERVICE_PORT?: string;
 }

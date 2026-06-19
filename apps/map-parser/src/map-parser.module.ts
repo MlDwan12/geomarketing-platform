@@ -7,6 +7,8 @@ import { ReviewEntity } from './reviews/entities/review.entity';
 import { YandexParserService } from './yandex-parser/yandex-parser.service';
 import { MapParserController } from './map-parser.controller';
 import { TwoGisParserService } from './two-gis-parser/two-gis-parser.service';
+import { TwoGisAccountService } from './2gis/two-gis-account.service';
+import { TwoGisAccountController } from './2gis/two-gis-account.controller';
 
 @Module({
   imports: [
@@ -27,7 +29,12 @@ import { TwoGisParserService } from './two-gis-parser/two-gis-parser.service';
     TypeOrmModule.forFeature([ReviewEntity]),
     AppConfigModule,
   ],
-  controllers: [MapParserController],
-  providers: [MapParserService, YandexParserService, TwoGisParserService],
+  controllers: [MapParserController, TwoGisAccountController],
+  providers: [
+    MapParserService,
+    YandexParserService,
+    TwoGisParserService,
+    TwoGisAccountService,
+  ],
 })
 export class MapParserModule {}

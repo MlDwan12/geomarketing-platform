@@ -1,0 +1,54 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  Dockerfile.map-parser — отдельный образ для сервиса парсинга карт         ║
+# ║                                                                            ║
+# ║  Почему не обычный Dockerfile:                                             ║
+# ║    Playwright/Chromium требует glibc (GNU libc).                           ║
+# ║    Alpine использует musl libc — Chromium на нём не запускается.           ║
+# ║    Используем node:20-bookworm-slim (Debian 12, slim).                     ║
+# ║                                                                            ║
+# ║  Предупреждение по размеру:                                                ║
+# ║    Финальный образ ~1.5GB из-за Chromium (~200MB) и системных либ.         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# ── Этап 1: все зависимости ───────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS deps
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+# ── Этап 2: сборка map-parser ─────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN yarn nest build map-parser
+
+# ── Этап 3: production-зависимости ───────────────────────────────────────────
+FROM node:20-bookworm-slim AS prod-deps
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production
+
+# ── Этап 4: финальный образ с Chromium ───────────────────────────────────────
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    # Путь, куда Playwright сохраняет скачанные браузеры
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+COPY --from=prod-deps /app/node_modules ./node_modules
+
+# playwright install --with-deps делает две вещи:
+#   1. apt-get install системных зависимостей Chromium (libglib2, nss, xvfb и др.)
+#   2. Скачивает бинарник Chromium (~200MB) в PLAYWRIGHT_BROWSERS_PATH
+#
+# Этот слой кешируется: повторная сборка без изменений package.json не перекачивает браузер.
+RUN node_modules/.bin/playwright install --with-deps chromium
+
+COPY --from=builder /app/dist ./dist
+
+CMD ["node", "dist/apps/map-parser/main.js"]

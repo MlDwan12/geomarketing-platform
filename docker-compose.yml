@@ -1,56 +1,124 @@
-version: '3.9'
+# Docker Compose V2 — ключ `version` убран (deprecated с Compose V2)
+#
+# Запуск всего стека:        docker compose up -d
+# Только инфраструктура:     docker compose up -d postgres redis rabbitmq
+# Логи конкретного сервиса:  docker compose logs -f api-gateway
+# Пересборка одного сервиса: docker compose up -d --build api-gateway
+
+# ── YAML-якоря для устранения дублирования ────────────────────────────────────
+#
+# x-* ключи игнорируются Docker Compose и используются только для YAML-анкоров.
+
+# Общие настройки всех app-сервисов
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  # unless-stopped vs always:
+  #   always      — перезапускается даже после ручного `docker stop` (production)
+  #   unless-stopped — не перезапускается после ручного стопа (удобно в dev)
+  networks:
+    - geo-net
+  # env_file подгружает ВСЕ переменные из .env.
+  # Переменные в секции environment: ниже ПЕРЕОПРЕДЕЛЯЮТ значения из .env
+  # (важно для Docker-специфичных хостов: redis, postgres, rabbitmq)
+  env_file: .env
+
+# Переменные, общие для всех app-сервисов
+x-app-env: &app-env
+  NODE_ENV: ${NODE_ENV:-development}
+  # Переопределяем URL с localhost на Docker-имена сервисов
+  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+# Переменные для сервисов с доступом к БД
+x-db-env: &db-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-geomarketing}
 
 services:
+
+  # ╔══════════════════════════════════════════════════════════════════════════╗
+  # ║  ИНФРАСТРУКТУРА                                                        ║
+  # ╚══════════════════════════════════════════════════════════════════════════╝
+
   postgres:
-    image: postgres:16
-    container_name: geomarketing-postgres
-    restart: always
+    image: postgres:16-alpine
+    # alpine-вариант на ~50MB меньше полного образа
+    container_name: geo-postgres
+    restart: unless-stopped
+    networks:
+      - geo-net
     ports:
-      - '5432:5432'
+      - "5432:5432"  # открыт для DBeaver / DataGrip снаружи Docker
     environment:
-      POSTGRES_DB: geomarketing
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-geomarketing}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d geomarketing']
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-geomarketing}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s  # даём PostgreSQL время на инициализацию при первом запуске
 
   redis:
-    image: redis:7
-    container_name: geomarketing-redis
-    restart: always
+    image: redis:7-alpine
+    container_name: geo-redis
+    restart: unless-stopped
+    networks:
+      - geo-net
     ports:
-      - '6379:6379'
+      - "6379:6379"  # открыт для RedisInsight / redis-cli снаружи Docker
+    volumes:
+      - redis_data:/data
+      # Без тома сессии сбрасываются при каждом рестарте контейнера
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: geomarketing-rabbitmq
-    restart: always
+    image: rabbitmq:3-management-alpine
+    container_name: geo-rabbitmq
+    restart: unless-stopped
+    networks:
+      - geo-net
     ports:
-      - '5672:5672'
-      - '15672:15672'
+      - "5672:5672"    # AMQP — для подключения сервисов
+      - "15672:15672"  # Management UI — http://localhost:15672 (guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      # Без тома очереди и exchange сбрасываются при рестарте
     healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s  # RabbitMQ стартует медленнее остальных
+
+  # ╔══════════════════════════════════════════════════════════════════════════╗
+  # ║  ПРИЛОЖЕНИЯ                                                            ║
+  # ╚══════════════════════════════════════════════════════════════════════════╝
 
   api-gateway:
-    build: .
-    container_name: api-gateway
-    restart: always
-    command: node dist/apps/api-gateway/main.js
+    <<: *service-defaults
+    container_name: geo-api-gateway
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: api-gateway  # передаётся в Dockerfile как ARG APP
     ports:
-      - '3000:3000'
+      - "${API_GATEWAY_PORT:-3000}:${API_GATEWAY_PORT:-3000}"
+    environment:
+      <<: [*app-env, *db-env]
+      API_GATEWAY_PORT: ${API_GATEWAY_PORT:-3000}
+      REDIS_HOST: redis        # переопределяем localhost → docker-имя сервиса
+      REDIS_PORT: 6379
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      # :? синтаксис — compose упадёт с ошибкой, если переменная не задана.
+      # Защита от случайного запуска без секрета.
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,102 +126,115 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    environment:
-      NODE_ENV: development
-      API_GATEWAY_PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
 
   core-service:
-    build: .
-    container_name: core-service
-    restart: always
-    command: node dist/apps/core-service/main.js
-    ports:
-      - '3001:3001'
+    <<: *service-defaults
+    container_name: geo-core-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: core-service
+    # Порт не публикуется наружу: core-service слушает RabbitMQ, не HTTP-запросы
+    # от внешних клиентов. Между сервисами в geo-net достаточно внутреннего доступа.
+    environment:
+      <<: [*app-env, *db-env]
+      CORE_SERVICE_PORT: ${CORE_SERVICE_PORT:-3001}
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    environment:
-      NODE_ENV: development
-      CORE_SERVICE_PORT: 3001
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
 
   review-service:
-    build: .
-    container_name: review-service
-    restart: always
-    command: node dist/apps/review-service/main.js
-    ports:
-      - '3002:3002'
+    <<: *service-defaults
+    container_name: geo-review-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: review-service
+    environment:
+      <<: [*app-env, *db-env]
+      REVIEW_SERVICE_PORT: ${REVIEW_SERVICE_PORT:-3002}
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    environment:
-      NODE_ENV: development
-      REVIEW_SERVICE_PORT: 3002
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
 
   ai-service:
-    build: .
-    container_name: ai-service
-    restart: always
-    command: node dist/apps/ai-service/main.js
-    ports:
-      - '3003:3003'
+    <<: *service-defaults
+    container_name: geo-ai-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: ai-service
+    environment:
+      <<: *app-env
+      AI_SERVICE_PORT: ${AI_SERVICE_PORT:-3003}
     depends_on:
       rabbitmq:
         condition: service_healthy
+
+  integration-service:
+    <<: *service-defaults
+    container_name: geo-integration-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP: integration-service
     environment:
-      NODE_ENV: development
-      AI_SERVICE_PORT: 3003
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      <<: *app-env
+      INTEGRATION_SERVICE_PORT: ${INTEGRATION_SERVICE_PORT:-3004}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   map-parser:
-    build: .
-    container_name: map-parser
-    restart: always
-    command: node dist/apps/map-parser/main.js
-    ports:
-      - '3005:3005'
+    <<: *service-defaults
+    container_name: geo-map-parser
+    build:
+      context: .
+      dockerfile: Dockerfile.map-parser
+      # Использует отдельный Dockerfile с Debian base + Playwright Chromium.
+      # Первая сборка занимает долго (~скачивание Chromium 200MB).
+      # При повторных сборках слой с браузером кешируется.
+    environment:
+      <<: [*app-env, *db-env]
+      MAP_PARSER_PORT: ${MAP_PARSER_PORT:-3005}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASS: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-geomarketing}
+      TWO_GIS_LOGIN: ${TWO_GIS_LOGIN}
+      TWO_GIS_PASSWORD: ${TWO_GIS_PASSWORD}
+      TWO_GIS_API_KEY: ${TWO_GIS_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    environment:
-      NODE_ENV: development
-      MAP_PARSER_PORT: 3005
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/geomarketing
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASS: postgres
-      DB_NAME: geomarketing
 
-  integration-service:
-    build: .
-    container_name: integration-service
-    restart: always
-    command: node dist/apps/integration-service/main.js
-    ports:
-      - '3004:3004'
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      NODE_ENV: development
-      INTEGRATION_SERVICE_PORT: 3004
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+# ── Сеть ──────────────────────────────────────────────────────────────────────
+#
+# Явная сеть вместо default bridge:
+#   - Сервисы обращаются друг к другу по имени (postgres, redis, rabbitmq)
+#   - Изолирована от других Docker-проектов на машине
+#   - Легко читать: в compose сразу видно, что все сервисы в одной сети
+networks:
+  geo-net:
+    driver: bridge
 
+# ── Тома ──────────────────────────────────────────────────────────────────────
+#
+# Named volumes — данные хранятся на хосте и переживают пересоздание контейнеров.
+# Посмотреть: docker volume ls | grep geo
+# Удалить всё (ОСТОРОЖНО — стирает данные БД!): docker compose down -v
 volumes:
   postgres_data:
+  redis_data:
+  rabbitmq_data:

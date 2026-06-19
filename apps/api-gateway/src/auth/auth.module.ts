@@ -1,16 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AppConfigModule } from '@geo/config';
 import { Queues } from '@geo/contracts';
-import { ApiGatewayController } from './api-gateway.controller';
-import { ApiGatewayService } from './api-gateway.service';
-import { AuthModule } from './auth/auth.module';
-import { BrandsModule } from './brands/brands.module';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
-    AppConfigModule,
     ClientsModule.registerAsync([
       {
         name: 'CORE_SERVICE',
@@ -26,10 +21,7 @@ import { BrandsModule } from './brands/brands.module';
         }),
       },
     ]),
-    AuthModule,
-    BrandsModule,
   ],
-  controllers: [ApiGatewayController],
-  providers: [ApiGatewayService],
+  controllers: [AuthController],
 })
-export class ApiGatewayModule {}
+export class AuthModule {}
