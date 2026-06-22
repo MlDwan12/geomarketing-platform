@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -7,10 +8,17 @@ import {
   Param,
   Patch,
   Post,
+  Req,
+  UploadedFile,
   UseFilters,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import type { Request as ExpressRequest } from 'express';
 import { Patterns } from '@geo/contracts';
 import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
@@ -20,6 +28,25 @@ import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 
 const RPC_TIMEOUT = 5000;
+const ALLOWED_MIME = /^image\/(jpeg|png|webp|svg\+xml)$/;
+
+const logoStorage = diskStorage({
+  destination: join(process.cwd(), 'uploads'),
+  filename: (_req, file, cb) =>
+    cb(null, `${crypto.randomUUID()}${extname(file.originalname).toLowerCase()}`),
+});
+
+const logoInterceptor = FileInterceptor('logo', {
+  storage: logoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MIME.test(file.mimetype)) {
+      cb(new BadRequestException('Допустимые форматы: jpeg, png, webp, svg'), false);
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 @Controller('brands')
 @UseGuards(SessionGuard)
@@ -59,23 +86,34 @@ export class BrandsController {
 
   @Post()
   @HttpCode(201)
-  create(@Body() dto: CreateBrandDto, @CurrentUser() user: { userId: string }) {
+  @UseInterceptors(logoInterceptor)
+  create(
+    @Body() dto: CreateBrandDto,
+    @UploadedFile() logo: Express.Multer.File | undefined,
+    @CurrentUser() user: { userId: string },
+    @Req() req: ExpressRequest,
+  ) {
+    const logoUrl = logo ? `${req.protocol}://${req.hostname}/uploads/${logo.filename}` : dto.logoUrl;
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.BRAND_CREATE, { ...dto, userId: user.userId })
+        .send(Patterns.BRAND_CREATE, { ...dto, logoUrl, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   @Patch(':id')
+  @UseInterceptors(logoInterceptor)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateBrandDto,
+    @UploadedFile() logo: Express.Multer.File | undefined,
     @CurrentUser() user: { userId: string },
+    @Req() req: ExpressRequest,
   ) {
+    const logoUrl = logo ? `${req.protocol}://${req.hostname}/uploads/${logo.filename}` : dto.logoUrl;
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.BRAND_UPDATE, { brandId: id, ...dto, userId: user.userId })
+        .send(Patterns.BRAND_UPDATE, { brandId: id, ...dto, logoUrl, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
