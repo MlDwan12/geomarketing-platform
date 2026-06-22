@@ -75,4 +75,4 @@ jobs:
             docker pull ${{ env.IMAGE }}:ai-service
             docker pull ${{ env.IMAGE }}:integration-service
             docker pull ${{ env.IMAGE }}:map-parser
-            docker compose -f /var/www/site/docker-compose.prod.yml up -d
+            docker compose -f /var/www/site/docker-compose.yml up -d
