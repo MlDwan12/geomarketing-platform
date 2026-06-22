@@ -196,12 +196,11 @@ services:
   map-parser:
     <<: *service-defaults
     container_name: geo-map-parser
-    build:
-      context: .
-      dockerfile: Dockerfile.map-parser
-      # Использует отдельный Dockerfile с Debian base + Playwright Chromium.
-      # Первая сборка занимает долго (~скачивание Chromium 200MB).
-      # При повторных сборках слой с браузером кешируется.
+    image: map-parser-local:latest
+    ports:
+      - "${MAP_PARSER_PORT:-3005}:${MAP_PARSER_PORT:-3005}"
+    dns:
+      - 1.1.1.1
     environment:
       <<: [*app-env, *db-env]
       MAP_PARSER_PORT: ${MAP_PARSER_PORT:-3005}

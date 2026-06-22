@@ -9,11 +9,32 @@ export class RpcExceptionFilter implements ExceptionFilter {
     const res = ctx.getResponse<Response>();
     const err = exception.getError();
 
-    if (typeof err === 'object' && err !== null && 'statusCode' in err) {
-      const { statusCode, message } = err as { statusCode: number; message: string };
-      return res.status(statusCode).json({ message });
+    let status = 500;
+    let code = 'INTERNAL_ERROR';
+    let message = 'Внутренняя ошибка сервера';
+
+    if (typeof err === 'object' && err !== null) {
+      const e = err as Record<string, unknown>;
+      status = (e['statusCode'] ?? e['status'] ?? 500) as number;
+      message = (e['message'] ?? message) as string;
+      code = (e['code'] as string) ?? codeFromStatus(status);
     }
 
-    return res.status(500).json({ message: String(err) });
+    return res.status(status).json({
+      success: false,
+      error: { code, message },
+    });
   }
+}
+
+function codeFromStatus(status: number): string {
+  const map: Record<number, string> = {
+    400: 'VALIDATION_ERROR',
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    409: 'CONFLICT',
+    422: 'UNPROCESSABLE_ENTITY',
+  };
+  return map[status] ?? 'INTERNAL_ERROR';
 }

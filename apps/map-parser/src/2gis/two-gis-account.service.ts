@@ -54,7 +54,55 @@ export class TwoGisAccountService {
   private readonly apiKey = 'accweb96f8';
   private readonly catalogApiBase = 'https://catalog.api.2gis.com';
 
+  private cachedToken: string | null = null;
+  private tokenExpiresAt = 0;
+
   constructor(private readonly config: ConfigService) {}
+
+  async listOrgs(): Promise<unknown> {
+    const token = await this.getToken();
+
+    const res = await fetch(`${this.apiBase}/orgs`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-api-key': this.apiKey,
+        locale: 'ru',
+        origin: 'https://account.2gis.com',
+        referer: 'https://account.2gis.com/',
+      },
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`2GIS orgs list ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return JSON.parse(text);
+  }
+
+  async listBranches(orgId: string, page = 1, perPage = 50): Promise<unknown> {
+    const token = await this.getToken();
+
+    const url = new URL(`${this.apiBase}/branches`);
+    url.searchParams.set('orgId', orgId);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('per_page', String(perPage));
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-api-key': this.apiKey,
+        locale: 'ru',
+        origin: 'https://account.2gis.com',
+        referer: 'https://account.2gis.com/',
+      },
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`2GIS branches list ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return JSON.parse(text);
+  }
 
   async getBranchInfo(branchId: string) {
     const url = new URL('https://catalog.api.2gis.com/3.0/items/byid');
@@ -198,6 +246,10 @@ export class TwoGisAccountService {
   }
 
   private async getToken(): Promise<string> {
+    if (this.cachedToken && Date.now() < this.tokenExpiresAt) {
+      return this.cachedToken;
+    }
+
     const login = this.config.getOrThrow<string>('TWO_GIS_LOGIN');
     const password = this.config.getOrThrow<string>('TWO_GIS_PASSWORD');
 
@@ -226,6 +278,10 @@ export class TwoGisAccountService {
       throw new Error('2GIS auth: no access_token in response');
     }
 
+    this.cachedToken = token;
+    this.tokenExpiresAt = Date.now() + 50 * 60 * 1000; // 50 минут
+
+    this.logger.log('2GIS token refreshed');
     return token;
   }
 

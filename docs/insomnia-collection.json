@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-06-19",
+  "__export_date": "2026-06-21",
   "__export_source": "geomarketing-platform",
   "resources": [
     {
@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "name": "Geomarketing Platform",
-      "description": "API коллекция для geomarketing-platform (api-gateway :3000)",
+      "description": "API коллекция для geomarketing-platform (api-gateway :3000, map-parser :3005)",
       "scope": "collection"
     },
 
@@ -20,9 +20,14 @@
       "name": "Local",
       "data": {
         "base_url": "http://localhost:3000",
+        "parser_url": "http://localhost:3005",
         "test_email": "test@example.com",
         "test_password": "password123",
-        "reset_token": ""
+        "reset_token": "",
+        "brand_id": "54342908-b50e-4652-9c27-52cb21399f19",
+        "company_id": "6c15aa33-bd78-4ee0-8b90-39643a6b5913",
+        "twogis_org_id": "70000001056220281",
+        "twogis_branch_id": "70000001056220282"
       },
       "color": "#4CAF50",
       "isPrivate": false
@@ -56,9 +61,7 @@
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Иван Петров\",\n  \"email\": \"{{ test_email }}\",\n  \"password\": \"{{ test_password }}\",\n  \"referralCode\": \"\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -75,9 +78,7 @@
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"{{ test_email }}\",\n  \"password\": \"{{ test_password }}\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -103,14 +104,12 @@
       "name": "Update Profile",
       "method": "PATCH",
       "url": "{{ base_url }}/auth/profile",
-      "description": "Обновляет поля профиля. Все поля опциональны — передавай только те, что меняешь.",
+      "description": "Обновляет поля профиля. Все поля опциональны.",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Иван Петров\",\n  \"fullName\": \"Иванов Иван Иванович\",\n  \"phone\": \"+79001234567\",\n  \"telegram\": \"@ivanpetrov\",\n  \"timezone\": \"Europe/Moscow\",\n  \"locale\": \"ru\"\n}"
+        "text": "{\n  \"name\": \"Иван Петров\",\n  \"phone\": \"+79001234567\",\n  \"timezone\": \"Europe/Moscow\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -122,14 +121,12 @@
       "name": "Update Avatar",
       "method": "PATCH",
       "url": "{{ base_url }}/auth/avatar",
-      "description": "Обновляет ссылку на аватар. Передаётся готовый URL (после загрузки файла на CDN).",
+      "description": "Обновляет ссылку на аватар.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"avatarUrl\": \"https://cdn.example.com/avatars/user-123.jpg\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -141,14 +138,12 @@
       "name": "Change Password",
       "method": "PATCH",
       "url": "{{ base_url }}/auth/password",
-      "description": "Меняет пароль. Требует текущий пароль для подтверждения.",
+      "description": "Меняет пароль. Требует текущий пароль.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"currentPassword\": \"{{ test_password }}\",\n  \"newPassword\": \"newpassword456\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -160,14 +155,12 @@
       "name": "Forgot Password",
       "method": "POST",
       "url": "{{ base_url }}/auth/forgot-password",
-      "description": "Создаёт токен сброса пароля. В dev-режиме токен печатается в консоль сервера вместо отправки email.",
+      "description": "Создаёт токен сброса пароля. В dev-режиме токен печатается в консоль.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"{{ test_email }}\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -179,14 +172,12 @@
       "name": "Reset Password",
       "method": "POST",
       "url": "{{ base_url }}/auth/reset-password",
-      "description": "Применяет токен из письма и устанавливает новый пароль. Токен одноразовый. Скопируй из консоли сервера в переменную reset_token.",
+      "description": "Применяет токен из письма и устанавливает новый пароль.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"token\": \"{{ reset_token }}\",\n  \"password\": \"newpassword789\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -198,7 +189,7 @@
       "name": "Logout",
       "method": "POST",
       "url": "{{ base_url }}/auth/logout",
-      "description": "Уничтожает сессию в Redis и очищает куку. После этого /auth/me вернёт 401.",
+      "description": "Уничтожает сессию в Redis.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -210,7 +201,7 @@
       "_type": "request_group",
       "parentId": "wrk_geo",
       "name": "Brands",
-      "description": "CRUD брендов. Все ручки требуют активной сессии (SessionGuard)."
+      "description": "CRUD брендов. Все ручки требуют активной сессии."
     },
 
     {
@@ -220,7 +211,7 @@
       "name": "List Brands",
       "method": "GET",
       "url": "{{ base_url }}/brands",
-      "description": "Возвращает все бренды, в которых текущий пользователь является участником (owner или member через user_brands).",
+      "description": "Все бренды текущего пользователя (через user_brands). Статусы: active, suspended, deleted.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -234,7 +225,7 @@
       "name": "List Brands Short",
       "method": "GET",
       "url": "{{ base_url }}/brands/short",
-      "description": "Короткий список (id, name, slug, logoUrl) для свитчера брендов в UI.",
+      "description": "Короткий список (id, name, slug, logoUrl) для свитчера в UI.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -247,8 +238,8 @@
       "parentId": "fld_brands",
       "name": "Get Brand",
       "method": "GET",
-      "url": "{{ base_url }}/brands/BRAND_ID_HERE",
-      "description": "Возвращает один бренд. 403 если пользователь не является участником.",
+      "url": "{{ base_url }}/brands/{{ brand_id }}",
+      "description": "Один бренд. 403 если пользователь не участник.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -262,14 +253,12 @@
       "name": "Create Brand",
       "method": "POST",
       "url": "{{ base_url }}/brands",
-      "description": "Создаёт бренд. Автоматически генерирует slug из name. Создаёт запись user_brands с ролью owner.",
+      "description": "Создаёт бренд, генерирует slug. Создаёт user_brands с ролью owner.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Мой бренд\",\n  \"timezone\": \"Europe/Moscow\",\n  \"description\": \"Описание бренда\"\n}"
       },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" }
-      ],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },
@@ -280,15 +269,195 @@
       "parentId": "fld_brands",
       "name": "Update Brand",
       "method": "PATCH",
-      "url": "{{ base_url }}/brands/BRAND_ID_HERE",
-      "description": "Обновляет поля бренда. Только owner может редактировать. Если меняется name — slug пересчитывается.",
+      "url": "{{ base_url }}/brands/{{ brand_id }}",
+      "description": "Обновляет поля бренда. Только owner.",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Новое название\",\n  \"description\": \"Обновлённое описание\",\n  \"timezone\": \"Europe/Moscow\"\n}"
+        "text": "{\n  \"name\": \"Новое название\",\n  \"description\": \"Описание\",\n  \"timezone\": \"Europe/Moscow\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "fld_companies",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Companies",
+      "description": "CRUD компаний (филиалов). Все запросы требуют X-Brand-Id и активной сессии."
+    },
+
+    {
+      "_id": "req_companies_list",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "List Companies",
+      "method": "GET",
+      "url": "{{ base_url }}/companies",
+      "description": "Все компании бренда. Возвращает базовые поля: name, rating, reviewCount, addressDisplay, status.",
+      "body": {},
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_get",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Get Company (full)",
+      "method": "GET",
+      "url": "{{ base_url }}/companies/{{ company_id }}",
+      "description": "Полный профиль компании: базовые поля + card (категории, расписание, контакты) + platforms (2GIS, Яндекс со статусами).",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_create",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Create Company",
+      "method": "POST",
+      "url": "{{ base_url }}/companies",
+      "description": "Создаёт компанию вручную. Автоматически создаёт пустую карточку и 2 платформы (2GIS + Яндекс = not_connected).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Название филиала\",\n  \"code\": \"BRANCH-001\"\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" }
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
       ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_get_card",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Get Company Card",
+      "method": "GET",
+      "url": "{{ base_url }}/companies/{{ company_id }}/card",
+      "description": "Только JSONB карточка компании (без базовых полей и платформ).",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_update_card",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Update Company Card",
+      "method": "PATCH",
+      "url": "{{ base_url }}/companies/{{ company_id }}/card",
+      "description": "Обновляет поля карточки. Передавай только изменяемые поля. Денормализует name и addressDisplay в таблицу companies.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"names\": [{\"lang\": \"ru\", \"val\": \"Название на русском\"}],\n  \"phones\": [{\"value\": \"+79001234567\", \"comment\": \"Основной\"}],\n  \"websites\": [\"https://example.com\"],\n  \"socials\": [{\"type\": \"vkontakte\", \"value\": \"https://vk.com/example\"}],\n  \"mainCategory\": {\"id\": \"666\", \"name\": \"PR и связи с общественностью\"},\n  \"descriptions\": [{\"lang\": \"ru\", \"val\": \"Описание компании\"}],\n  \"schedule\": {\n    \"Mon\": {\"working_hours\": [{\"from\": \"09:00\", \"to\": \"18:00\"}]},\n    \"Tue\": {\"working_hours\": [{\"from\": \"09:00\", \"to\": \"18:00\"}]}\n  }\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "fld_import",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Import / 2GIS",
+      "description": "Импорт брендов и компаний из личного кабинета 2ГИС. Требует активной сессии."
+    },
+
+    {
+      "_id": "req_import_single",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Import Org (один бренд)",
+      "method": "POST",
+      "url": "{{ base_url }}/import/2gis",
+      "description": "Импортирует одну организацию 2ГИС как бренд и все её филиалы как компании. Подтягивает рейтинг, отзывы, категории и расписание из Catalog API.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orgId\": \"{{ twogis_org_id }}\",\n  \"timezone\": \"Europe/Moscow\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_import_sync",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Sync All Orgs (все бренды)",
+      "method": "POST",
+      "url": "{{ base_url }}/import/2gis/sync",
+      "description": "Синхронизирует все организации из ЛК 2ГИС. Активные орги → бренд active. Неактивные → бренд suspended. Уже импортированные филиалы (по orgId в company_platforms) → skipped. Подтягивает полные данные из Catalog API для каждого филиала.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"timezone\": \"Europe/Moscow\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "fld_parser",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Map Parser (внутренний :3005)",
+      "description": "Прямые запросы к map-parser сервису. Авторизация не нужна. Используется api-gateway внутренне."
+    },
+
+    {
+      "_id": "req_parser_orgs",
+      "_type": "request",
+      "parentId": "fld_parser",
+      "name": "2GIS — List Orgs",
+      "method": "GET",
+      "url": "{{ parser_url }}/2gis/account/orgs",
+      "description": "Возвращает все организации из ЛК 2ГИС (логин/пароль из env). Токен кэшируется 50 минут.",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_parser_branches",
+      "_type": "request",
+      "parentId": "fld_parser",
+      "name": "2GIS — List Branches",
+      "method": "GET",
+      "url": "{{ parser_url }}/2gis/account/branches",
+      "description": "Филиалы организации из ЛК 2ГИС. Требует orgId. Неактивные орги возвращают 403.",
+      "body": {},
+      "headers": [],
+      "parameters": [
+        { "name": "orgId", "value": "{{ twogis_org_id }}" },
+        { "name": "per_page", "value": "200" }
+      ],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_parser_branch",
+      "_type": "request",
+      "parentId": "fld_parser",
+      "name": "2GIS — Get Branch (Catalog)",
+      "method": "GET",
+      "url": "{{ parser_url }}/2gis/account/branch/{{ twogis_branch_id }}",
+      "description": "Полные данные филиала из Catalog API: рейтинг, отзывы, рубрики, расписание, контакты, координаты.",
+      "body": {},
+      "headers": [],
       "parameters": [],
       "authentication": {}
     }

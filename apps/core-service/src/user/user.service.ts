@@ -31,6 +31,9 @@ export class UserService {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return null;
 
+    await this.repo.update({ id: user.id }, { lastLoginAt: new Date() });
+    user.lastLoginAt = new Date();
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...rest } = user;
     return rest;
@@ -57,7 +60,7 @@ export class UserService {
       if (referrer) referredById = referrer.id;
     }
 
-    const user = this.repo.create({ name, email, passwordHash, refCode, referredById });
+    const user = this.repo.create({ name, email, passwordHash, refCode, referredById, lastLoginAt: new Date() });
     const saved = await this.repo.save(user);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -54,8 +54,22 @@ export class AuthController {
 
     req.session.userId = user.id;
     req.session.role = user.role;
+    await new Promise<void>((resolve, reject) =>
+      req.session.save((err: unknown) => {
+        console.log('[LOGIN] session.save err:', err, 'sessionID:', req.sessionID, 'userId:', req.session.userId);
+        err ? reject(err) : resolve();
+      }),
+    );
+    console.log('[LOGIN] response headers after save:', req.res?.getHeaders());
 
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl ?? null,
+      lastLoginAt: user.lastLoginAt,
+    };
   }
 
   @Post('register')
@@ -74,8 +88,18 @@ export class AuthController {
 
     req.session.userId = user.id;
     req.session.role = user.role;
+    await new Promise<void>((resolve, reject) =>
+      req.session.save((err: unknown) => (err ? reject(err) : resolve())),
+    );
 
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl ?? null,
+      lastLoginAt: user.lastLoginAt,
+    };
   }
 
   @Post('forgot-password')

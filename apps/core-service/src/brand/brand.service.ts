@@ -58,6 +58,7 @@ export class BrandService {
     description?: string;
     logoUrl?: string;
     userId: string;
+    status?: BrandStatus;
   }) {
     const slug = await this.generateSlug(dto.name);
 
@@ -69,7 +70,7 @@ export class BrandService {
         timezone: dto.timezone,
         description: dto.description ?? null,
         logoUrl: dto.logoUrl ?? null,
-        status: BrandStatus.Active,
+        status: dto.status ?? BrandStatus.Active,
       }),
     );
 

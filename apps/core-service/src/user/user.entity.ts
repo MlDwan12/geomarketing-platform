@@ -67,6 +67,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   referredById: string | null;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  lastLoginAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

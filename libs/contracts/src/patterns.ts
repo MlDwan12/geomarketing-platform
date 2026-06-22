@@ -19,10 +19,12 @@ export const Patterns = {
   BRAND_UPDATE:           'brand.update',
 
   // Companies
-  COMPANY_LIST:           'company.list',
-  COMPANY_CREATE:         'company.create',
-  COMPANY_GET_CARD:       'company.getCard',
-  COMPANY_UPDATE_CARD:    'company.updateCard',
+  COMPANY_LIST:                    'company.list',
+  COMPANY_GET:                     'company.get',
+  COMPANY_CREATE:                  'company.create',
+  COMPANY_GET_CARD:                'company.getCard',
+  COMPANY_UPDATE_CARD:             'company.updateCard',
+  COMPANY_FIND_BY_TWOGIS_ORG_ID:   'company.findByTwoGisOrgId',
 
   // Company groups
   GROUP_LIST:             'companyGroup.list',
