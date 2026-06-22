@@ -33,11 +33,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:api-gateway
           build-args: APP=api-gateway
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=api-gateway
           cache-to: type=gha,mode=max,scope=api-gateway
 
@@ -45,11 +47,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:core-service
           build-args: APP=core-service
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=core-service
           cache-to: type=gha,mode=max,scope=core-service
 
@@ -57,11 +61,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:review-service
           build-args: APP=review-service
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=review-service
           cache-to: type=gha,mode=max,scope=review-service
 
@@ -69,11 +75,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:ai-service
           build-args: APP=ai-service
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=ai-service
           cache-to: type=gha,mode=max,scope=ai-service
 
@@ -81,11 +89,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:integration-service
           build-args: APP=integration-service
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=integration-service
           cache-to: type=gha,mode=max,scope=integration-service
 
@@ -95,10 +105,12 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile.map-parser
+          file: Dockerfile.map-parser
           push: true
           tags: ${{ env.IMAGE }}:map-parser
+          platforms: linux/amd64
           provenance: false
+          sbom: false
           cache-from: type=gha,scope=map-parser
           cache-to: type=gha,mode=max,scope=map-parser
 
