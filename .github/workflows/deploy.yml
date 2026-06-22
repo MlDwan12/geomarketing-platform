@@ -5,7 +5,7 @@ on:
     branches: [master]
 
 env:
-  IMAGE: ghcr.io/i.petrenko1/geomarketing-platform
+  IMAGE: ghcr.io/${{ github.repository_owner }}/geomarketing-platform
 
 jobs:
   build-and-deploy:
@@ -68,11 +68,11 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u i.petrenko1 --password-stdin
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:api-gateway
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:core-service
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:review-service
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:ai-service
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:integration-service
-            docker pull ghcr.io/i.petrenko1/geomarketing-platform:map-parser
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:api-gateway
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:core-service
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:review-service
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:ai-service
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:integration-service
+            docker pull ghcr.io/${{ github.repository_owner }}/geomarketing-platform:map-parser
             docker compose -f /var/www/site/docker-compose.prod.yml up -d
