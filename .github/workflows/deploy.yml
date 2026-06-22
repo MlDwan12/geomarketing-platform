@@ -24,95 +24,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       # ── Основные сервисы (Dockerfile с ARG APP) ───────────────────────────
 
       - name: Build & Push api-gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ env.IMAGE }}:api-gateway
-          build-args: APP=api-gateway
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=api-gateway
-          cache-to: type=gha,mode=max,scope=api-gateway
+        run: |
+          docker build --build-arg APP=api-gateway -t ${{ env.IMAGE }}:api-gateway .
+          docker push ${{ env.IMAGE }}:api-gateway
 
       - name: Build & Push core-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ env.IMAGE }}:core-service
-          build-args: APP=core-service
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=core-service
-          cache-to: type=gha,mode=max,scope=core-service
+        run: |
+          docker build --build-arg APP=core-service -t ${{ env.IMAGE }}:core-service .
+          docker push ${{ env.IMAGE }}:core-service
 
       - name: Build & Push review-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ env.IMAGE }}:review-service
-          build-args: APP=review-service
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=review-service
-          cache-to: type=gha,mode=max,scope=review-service
+        run: |
+          docker build --build-arg APP=review-service -t ${{ env.IMAGE }}:review-service .
+          docker push ${{ env.IMAGE }}:review-service
 
       - name: Build & Push ai-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ env.IMAGE }}:ai-service
-          build-args: APP=ai-service
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=ai-service
-          cache-to: type=gha,mode=max,scope=ai-service
+        run: |
+          docker build --build-arg APP=ai-service -t ${{ env.IMAGE }}:ai-service .
+          docker push ${{ env.IMAGE }}:ai-service
 
       - name: Build & Push integration-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ env.IMAGE }}:integration-service
-          build-args: APP=integration-service
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=integration-service
-          cache-to: type=gha,mode=max,scope=integration-service
+        run: |
+          docker build --build-arg APP=integration-service -t ${{ env.IMAGE }}:integration-service .
+          docker push ${{ env.IMAGE }}:integration-service
 
       # ── map-parser — отдельный Dockerfile (Debian + Chromium) ─────────────
 
       - name: Build & Push map-parser
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile.map-parser
-          push: true
-          tags: ${{ env.IMAGE }}:map-parser
-          platforms: linux/amd64
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=map-parser
-          cache-to: type=gha,mode=max,scope=map-parser
+        run: |
+          docker build -f Dockerfile.map-parser -t ${{ env.IMAGE }}:map-parser .
+          docker push ${{ env.IMAGE }}:map-parser
 
       # ── Деплой на VPS ─────────────────────────────────────────────────────
 
