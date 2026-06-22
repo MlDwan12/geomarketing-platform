@@ -111,6 +111,8 @@ services:
         APP: api-gateway  # передаётся в Dockerfile как ARG APP
     ports:
       - "${API_GATEWAY_PORT:-3000}:${API_GATEWAY_PORT:-3000}"
+    volumes:
+      - uploads_data:/app/uploads
     environment:
       <<: [*app-env, *db-env]
       API_GATEWAY_PORT: ${API_GATEWAY_PORT:-3000}
@@ -237,3 +239,4 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  uploads_data:

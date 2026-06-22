@@ -1,8 +1,11 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
+import { join } from 'path';
+import { mkdirSync } from 'fs';
 import { ApiGatewayModule } from './api-gateway.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
@@ -11,11 +14,15 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const session = require('express-session');
 async function bootstrap() {
-  const app = await NestFactory.create(ApiGatewayModule, {
+  const uploadsDir = join(process.cwd(), 'uploads');
+  mkdirSync(uploadsDir, { recursive: true });
+
+  const app = await NestFactory.create<NestExpressApplication>(ApiGatewayModule, {
     logger: ['log', 'error', 'warn', 'debug'],
   });
   const configService = app.get(ConfigService);
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
 
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin;
