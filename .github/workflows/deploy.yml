@@ -37,6 +37,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:api-gateway
           build-args: APP=api-gateway
+          provenance: false
           cache-from: type=gha,scope=api-gateway
           cache-to: type=gha,mode=max,scope=api-gateway
 
@@ -48,6 +49,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:core-service
           build-args: APP=core-service
+          provenance: false
           cache-from: type=gha,scope=core-service
           cache-to: type=gha,mode=max,scope=core-service
 
@@ -59,6 +61,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:review-service
           build-args: APP=review-service
+          provenance: false
           cache-from: type=gha,scope=review-service
           cache-to: type=gha,mode=max,scope=review-service
 
@@ -70,6 +73,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:ai-service
           build-args: APP=ai-service
+          provenance: false
           cache-from: type=gha,scope=ai-service
           cache-to: type=gha,mode=max,scope=ai-service
 
@@ -81,6 +85,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:integration-service
           build-args: APP=integration-service
+          provenance: false
           cache-from: type=gha,scope=integration-service
           cache-to: type=gha,mode=max,scope=integration-service
 
@@ -93,6 +98,7 @@ jobs:
           dockerfile: Dockerfile.map-parser
           push: true
           tags: ${{ env.IMAGE }}:map-parser
+          provenance: false
           cache-from: type=gha,scope=map-parser
           cache-to: type=gha,mode=max,scope=map-parser
 
@@ -104,6 +110,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u i.petrenko1 --password-stdin
             docker pull ghcr.io/i.petrenko1/geomarketing-platform:api-gateway
