@@ -4,23 +4,30 @@ import { DataSource, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from './company.entity';
-import { CompanyCard } from './company-card.entity';
-import { CompanyPlatform, PlatformStatus, PlatformType } from './company-platform.entity';
+import { CompanyDefault, FieldOverride, FieldOverrides } from './company-default.entity';
+import { CompanyTemplate } from './company-template.entity';
+import { CompanyPlatform, PlatformStatus } from './company-platform.entity';
 import { UserBrand } from '../brand/user-brand.entity';
+
+const DEFAULT_PLATFORM_KEYS = ['yandex', 'twogis'];
 
 @Injectable()
 export class CompanyService {
   constructor(
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
-    @InjectRepository(CompanyCard)
-    private readonly cardRepo: Repository<CompanyCard>,
+    @InjectRepository(CompanyDefault)
+    private readonly defaultRepo: Repository<CompanyDefault>,
+    @InjectRepository(CompanyTemplate)
+    private readonly templateRepo: Repository<CompanyTemplate>,
     @InjectRepository(CompanyPlatform)
     private readonly platformRepo: Repository<CompanyPlatform>,
     @InjectRepository(UserBrand)
     private readonly userBrandRepo: Repository<UserBrand>,
     private readonly dataSource: DataSource,
   ) {}
+
+  // ── List ─────────────────────────────────────────────────────────────────
 
   async list(
     brandId: string,
@@ -40,6 +47,39 @@ export class CompanyService {
     return { items, total, page, limit };
   }
 
+  // ── Get ──────────────────────────────────────────────────────────────────
+
+  async get(companyId: string, userId: string) {
+    const company = await this.getCompanyOrThrow(companyId);
+    await this.checkBrandAccess(company.brandId, userId);
+
+    const def = await this.defaultRepo.findOne({ where: { companyId } });
+    const template = def?.templateId
+      ? await this.templateRepo.findOne({ where: { id: def.templateId } })
+      : null;
+    const platforms = await this.platformRepo.find({ where: { companyId } });
+
+    return {
+      ...company,
+      card: {
+        templateId: def?.templateId ?? null,
+        fields: this.assembleCardFields(def, template),
+      },
+      platforms: platforms.map((p) => ({
+        platformKey: p.platformKey,
+        isEnabled: p.isEnabled,
+        status: p.status,
+        orgId: p.orgId,
+        orgName: p.orgName,
+        connectedAt: p.connectedAt,
+        lastSyncAt: p.lastSyncAt,
+        syncError: p.syncError,
+      })),
+    };
+  }
+
+  // ── Create ───────────────────────────────────────────────────────────────
+
   async create(dto: {
     brandId: string;
     userId: string;
@@ -49,7 +89,7 @@ export class CompanyService {
     addressDisplay?: string;
     rating?: number | null;
     reviewCount?: number;
-    card?: Record<string, unknown>;
+    templateId?: string;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
 
@@ -69,52 +109,178 @@ export class CompanyService {
         }),
       );
 
-      await em.save(em.create(CompanyCard, { companyId: company.id, ...(dto.card ?? {}) }));
+      await em.save(
+        em.create(CompanyDefault, {
+          companyId: company.id,
+          templateId: dto.templateId ?? null,
+          fieldOverrides: {},
+        }),
+      );
 
       const now = new Date();
-
-      await em.save([
-        em.create(CompanyPlatform, {
-          companyId: company.id,
-          platform: PlatformType.Yandex,
-          status: PlatformStatus.NotConnected,
-          isEnabled: false,
-          orgId: null,
-          orgName: null,
-          connectedAt: null,
-          lastSyncAt: null,
-          syncError: null,
-        }),
-        em.create(CompanyPlatform, {
-          companyId: company.id,
-          platform: PlatformType.TwoGis,
-          status: dto.twoGisOrgId ? PlatformStatus.Connected : PlatformStatus.NotConnected,
-          isEnabled: dto.twoGisOrgId ? true : false,
-          orgId: dto.twoGisOrgId ?? null,
-          orgName: null,
-          connectedAt: dto.twoGisOrgId ? now : null,
-          lastSyncAt: null,
-          syncError: null,
-        }),
-      ]);
+      await em.save(
+        DEFAULT_PLATFORM_KEYS.map((platformKey) =>
+          em.create(CompanyPlatform, {
+            companyId: company.id,
+            platformKey,
+            status:
+              platformKey === 'twogis' && dto.twoGisOrgId
+                ? PlatformStatus.Connected
+                : PlatformStatus.NotConnected,
+            isEnabled: platformKey === 'twogis' && !!dto.twoGisOrgId,
+            orgId: platformKey === 'twogis' ? (dto.twoGisOrgId ?? null) : null,
+            orgName: null,
+            connectedAt: platformKey === 'twogis' && dto.twoGisOrgId ? now : null,
+            lastSyncAt: null,
+            syncError: null,
+          }),
+        ),
+      );
 
       return company;
     });
   }
 
-  async get(companyId: string, userId: string) {
+  // ── Update default (card data) ────────────────────────────────────────────
+
+  async updateDefault(
+    companyId: string,
+    userId: string,
+    dto: {
+      templateId?: string | null;
+      fieldOverrides?: FieldOverrides;
+    },
+  ) {
     const company = await this.getCompanyOrThrow(companyId);
     await this.checkBrandAccess(company.brandId, userId);
 
-    const card = await this.cardRepo.findOne({ where: { companyId } });
-    const platforms = await this.platformRepo.find({ where: { companyId } });
+    let def = await this.defaultRepo.findOne({ where: { companyId } });
 
-    return { ...company, card: card ?? null, platforms };
+    if (!def) {
+      def = this.defaultRepo.create({ companyId, templateId: null, fieldOverrides: {} });
+    }
+
+    if (dto.templateId !== undefined) {
+      def.templateId = dto.templateId;
+    }
+
+    if (dto.fieldOverrides) {
+      // Merge at field level — untouched fields stay as-is
+      def.fieldOverrides = { ...def.fieldOverrides, ...dto.fieldOverrides };
+    }
+
+    await this.defaultRepo.save(def);
+
+    const template = def.templateId
+      ? await this.templateRepo.findOne({ where: { id: def.templateId } })
+      : null;
+
+    return {
+      templateId: def.templateId,
+      fields: this.assembleCardFields(def, template),
+    };
   }
+
+  // ── Update platform (connection settings) ────────────────────────────────
+
+  async updatePlatform(
+    companyId: string,
+    userId: string,
+    platformKey: string,
+    dto: {
+      isEnabled?: boolean;
+      orgId?: string | null;
+      orgName?: string | null;
+      status?: PlatformStatus;
+    },
+  ) {
+    const company = await this.getCompanyOrThrow(companyId);
+    await this.checkBrandAccess(company.brandId, userId);
+
+    let platform = await this.platformRepo.findOne({ where: { companyId, platformKey } });
+
+    if (!platform) {
+      platform = this.platformRepo.create({
+        companyId,
+        platformKey,
+        status: PlatformStatus.NotConnected,
+        isEnabled: false,
+        orgId: null,
+        orgName: null,
+        connectedAt: null,
+        lastSyncAt: null,
+        syncError: null,
+      });
+    }
+
+    Object.assign(platform, dto);
+
+    if (dto.orgId && !platform.connectedAt) {
+      platform.connectedAt = new Date();
+      platform.status = PlatformStatus.Connected;
+    }
+
+    return this.platformRepo.save(platform);
+  }
+
+  // ── Templates ─────────────────────────────────────────────────────────────
+
+  async listTemplates(brandId: string, userId: string) {
+    await this.checkBrandAccess(brandId, userId);
+    return this.templateRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+  }
+
+  async createTemplate(dto: {
+    brandId: string;
+    userId: string;
+    name: string;
+    fields: Record<string, unknown>;
+  }) {
+    await this.checkBrandAccess(dto.brandId, dto.userId);
+    return this.templateRepo.save(
+      this.templateRepo.create({
+        brandId: dto.brandId,
+        name: dto.name,
+        fields: dto.fields,
+      }),
+    );
+  }
+
+  async updateTemplate(
+    templateId: string,
+    userId: string,
+    dto: { name?: string; fields?: Record<string, unknown> },
+  ) {
+    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+
+    if (!template) {
+      throw new RpcException({ status: 404, message: 'Template not found' });
+    }
+
+    await this.checkBrandAccess(template.brandId, userId);
+    Object.assign(template, dto);
+    return this.templateRepo.save(template);
+  }
+
+  async deleteTemplate(templateId: string, userId: string) {
+    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+
+    if (!template) {
+      throw new RpcException({ status: 404, message: 'Template not found' });
+    }
+
+    await this.checkBrandAccess(template.brandId, userId);
+
+    // Detach companies before deleting so they don't lose their data
+    await this.defaultRepo.update({ templateId }, { templateId: null });
+    await this.templateRepo.remove(template);
+  }
+
+  // ── findByTwoGisOrgId (used by integration service) ──────────────────────
 
   async findByTwoGisOrgId(orgId: string): Promise<{ id: string; brandId: string } | null> {
     const platform = await this.platformRepo.findOne({
-      where: { platform: PlatformType.TwoGis, orgId },
+      where: { platformKey: 'twogis', orgId },
     });
     if (!platform) return null;
 
@@ -124,41 +290,67 @@ export class CompanyService {
     return { id: company.id, brandId: company.brandId };
   }
 
-  async getCard(companyId: string, userId: string) {
-    const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+  // ── Resolve (for sync services) ───────────────────────────────────────────
 
-    const card = await this.cardRepo.findOne({ where: { companyId } });
+  // Returns the final flat field values for a given platform.
+  // Priority: platform override → company value → template value.
+  resolveForPlatform(
+    platformKey: string,
+    templateFields: Record<string, unknown>,
+    overrides: FieldOverrides,
+  ): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    const allKeys = new Set([...Object.keys(templateFields), ...Object.keys(overrides)]);
 
-    if (!card) {
-      throw new RpcException({ status: 404, message: 'Company card not found' });
+    for (const key of allKeys) {
+      const override = overrides[key] as FieldOverride | undefined;
+      const templateValue = templateFields[key];
+
+      if (override?.platforms?.[platformKey] !== undefined) {
+        result[key] = override.platforms[platformKey];
+      } else if (override?.isException && override.value !== undefined) {
+        result[key] = override.value;
+      } else if (templateValue !== undefined) {
+        result[key] = templateValue;
+      }
     }
 
-    return card;
+    return result;
   }
 
-  async updateCard(
-    companyId: string,
-    userId: string,
-    fields: Partial<Omit<CompanyCard, 'companyId' | 'updatedAt'>>,
-  ) {
-    const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+  // ── Private helpers ───────────────────────────────────────────────────────
 
-    await this.cardRepo.update({ companyId }, fields as any);
+  // Builds the per-field response: { fieldName: { isException, default, platforms? } }
+  private assembleCardFields(
+    def: CompanyDefault | null,
+    template: CompanyTemplate | null,
+  ): Record<string, unknown> {
+    const overrides = (def?.fieldOverrides ?? {}) as FieldOverrides;
+    const templateFields = (template?.fields ?? {}) as Record<string, unknown>;
+    const allKeys = new Set([...Object.keys(templateFields), ...Object.keys(overrides)]);
+    const result: Record<string, unknown> = {};
 
-    const nameDefault = this.extractDefaultName(fields.names);
-    const addressDisplay = this.extractAddressDisplay(fields.address);
+    for (const key of allKeys) {
+      const override = overrides[key] as FieldOverride | undefined;
+      const templateValue = templateFields[key];
+      const field: Record<string, unknown> = {};
 
-    const companyUpdate: Partial<Company> = {};
-    if (nameDefault) companyUpdate.name = nameDefault;
-    if (addressDisplay) companyUpdate.addressDisplay = addressDisplay;
+      if (override?.isException) {
+        field['isException'] = true;
+        if (override.value !== undefined) field['default'] = override.value;
+      } else {
+        field['isException'] = false;
+        if (templateValue !== undefined) field['default'] = templateValue;
+      }
 
-    if (Object.keys(companyUpdate).length) {
-      await this.companyRepo.update({ id: companyId }, companyUpdate);
+      if (override?.platforms && Object.keys(override.platforms).length > 0) {
+        field['platforms'] = override.platforms;
+      }
+
+      result[key] = field;
     }
 
-    return this.cardRepo.findOne({ where: { companyId } });
+    return result;
   }
 
   private async getCompanyOrThrow(companyId: string): Promise<Company> {
@@ -205,18 +397,5 @@ export class CompanyService {
       .join('')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-  }
-
-  private extractDefaultName(names: unknown): string | null {
-    if (!Array.isArray(names)) return null;
-    const ru = (names as { lang: string; val: string }[]).find((n) => n.lang === 'ru');
-    return ru?.val?.trim() || null;
-  }
-
-  private extractAddressDisplay(address: unknown): string | null {
-    if (!address || typeof address !== 'object') return null;
-    const a = address as Record<string, string>;
-    const parts = [a.city, a.street, a.building].filter(Boolean);
-    return parts.length ? parts.join(', ') : null;
   }
 }

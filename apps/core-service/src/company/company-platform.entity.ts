@@ -1,10 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
-export enum PlatformType {
-  Yandex = 'yandex',
-  TwoGis = 'twogis',
-}
-
 export enum PlatformStatus {
   NotConnected = 'not_connected',
   Connected = 'connected',
@@ -15,7 +10,7 @@ export enum PlatformStatus {
 }
 
 @Entity('company_platforms')
-@Unique(['companyId', 'platform'])
+@Unique(['companyId', 'platformKey'])
 export class CompanyPlatform {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,8 +18,9 @@ export class CompanyPlatform {
   @Column({ type: 'uuid' })
   companyId: string;
 
-  @Column({ type: 'enum', enum: PlatformType })
-  platform: PlatformType;
+  // String key — extensible to any number of platforms
+  @Column({ length: 64 })
+  platformKey: string;
 
   @Column({ type: 'enum', enum: PlatformStatus, default: PlatformStatus.NotConnected })
   status: PlatformStatus;

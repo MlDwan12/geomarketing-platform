@@ -48,7 +48,7 @@ export class CompaniesController {
   @HttpCode(201)
   create(
     @Headers('x-brand-id') brandId: string,
-    @Body() dto: { name: string; code?: string },
+    @Body() dto: { name: string; code?: string; twoGisOrgId?: string; templateId?: string },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
@@ -67,27 +67,42 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/card')
-  getCard(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_GET_CARD, { companyId: id, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
-  }
-
-  @Patch(':id/card')
-  updateCard(
+  // PATCH /companies/:id/default
+  // Body: { templateId?, fieldOverrides? }
+  // fieldOverrides: { fieldName: { isException, value?, platforms? } }
+  @Patch(':id/default')
+  updateDefault(
     @Param('id') id: string,
-    @Body() fields: Record<string, unknown>,
+    @Body() dto: { templateId?: string | null; fieldOverrides?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_UPDATE_CARD, {
+        .send(Patterns.COMPANY_DEFAULT_UPDATE, {
           companyId: id,
           userId: user.userId,
-          fields,
+          ...dto,
+        })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  // PATCH /companies/:id/platforms/:platformKey
+  // Body: { isEnabled?, orgId?, orgName?, status? }
+  @Patch(':id/platforms/:platformKey')
+  updatePlatform(
+    @Param('id') id: string,
+    @Param('platformKey') platformKey: string,
+    @Body() dto: { isEnabled?: boolean; orgId?: string | null; orgName?: string | null },
+    @CurrentUser() user: { userId: string },
+  ) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.COMPANY_PLATFORM_UPDATE, {
+          companyId: id,
+          userId: user.userId,
+          platformKey,
+          ...dto,
         })
         .pipe(timeout(RPC_TIMEOUT)),
     );

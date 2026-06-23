@@ -23,9 +23,15 @@ export const Patterns = {
   COMPANY_LIST:                    'company.list',
   COMPANY_GET:                     'company.get',
   COMPANY_CREATE:                  'company.create',
-  COMPANY_GET_CARD:                'company.getCard',
-  COMPANY_UPDATE_CARD:             'company.updateCard',
   COMPANY_FIND_BY_TWOGIS_ORG_ID:   'company.findByTwoGisOrgId',
+  COMPANY_DEFAULT_UPDATE:          'company.default.update',
+  COMPANY_PLATFORM_UPDATE:         'company.platform.update',
+
+  // Templates
+  TEMPLATE_LIST:   'template.list',
+  TEMPLATE_CREATE: 'template.create',
+  TEMPLATE_UPDATE: 'template.update',
+  TEMPLATE_DELETE: 'template.delete',
 
   // Company groups
   GROUP_LIST:             'companyGroup.list',

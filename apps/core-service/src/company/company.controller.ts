@@ -2,7 +2,8 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
 import { CompanyService } from './company.service';
-import { CompanyCard } from './company-card.entity';
+import { FieldOverrides } from './company-default.entity';
+import { PlatformStatus } from './company-platform.entity';
 
 @Controller()
 export class CompanyController {
@@ -31,6 +32,7 @@ export class CompanyController {
       code?: string;
       twoGisOrgId?: string;
       addressDisplay?: string;
+      templateId?: string;
     },
   ) {
     return this.companyService.create(dto);
@@ -41,20 +43,63 @@ export class CompanyController {
     return this.companyService.findByTwoGisOrgId(orgId);
   }
 
-  @MessagePattern(Patterns.COMPANY_GET_CARD)
-  getCard(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
-    return this.companyService.getCard(companyId, userId);
-  }
-
-  @MessagePattern(Patterns.COMPANY_UPDATE_CARD)
-  updateCard(
+  @MessagePattern(Patterns.COMPANY_DEFAULT_UPDATE)
+  updateDefault(
     @Payload()
     dto: {
       companyId: string;
       userId: string;
-      fields: Partial<Omit<CompanyCard, 'companyId' | 'updatedAt'>>;
+      templateId?: string | null;
+      fieldOverrides?: FieldOverrides;
     },
   ) {
-    return this.companyService.updateCard(dto.companyId, dto.userId, dto.fields);
+    const { companyId, userId, ...rest } = dto;
+    return this.companyService.updateDefault(companyId, userId, rest);
+  }
+
+  @MessagePattern(Patterns.COMPANY_PLATFORM_UPDATE)
+  updatePlatform(
+    @Payload()
+    dto: {
+      companyId: string;
+      userId: string;
+      platformKey: string;
+      isEnabled?: boolean;
+      orgId?: string | null;
+      orgName?: string | null;
+      status?: PlatformStatus;
+    },
+  ) {
+    const { companyId, userId, platformKey, ...rest } = dto;
+    return this.companyService.updatePlatform(companyId, userId, platformKey, rest);
+  }
+
+  // ── Templates ─────────────────────────────────────────────────────────────
+
+  @MessagePattern(Patterns.TEMPLATE_LIST)
+  listTemplates(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
+    return this.companyService.listTemplates(brandId, userId);
+  }
+
+  @MessagePattern(Patterns.TEMPLATE_CREATE)
+  createTemplate(
+    @Payload()
+    dto: { brandId: string; userId: string; name: string; fields: Record<string, unknown> },
+  ) {
+    return this.companyService.createTemplate(dto);
+  }
+
+  @MessagePattern(Patterns.TEMPLATE_UPDATE)
+  updateTemplate(
+    @Payload()
+    dto: { templateId: string; userId: string; name?: string; fields?: Record<string, unknown> },
+  ) {
+    const { templateId, userId, ...rest } = dto;
+    return this.companyService.updateTemplate(templateId, userId, rest);
+  }
+
+  @MessagePattern(Patterns.TEMPLATE_DELETE)
+  deleteTemplate(@Payload() { templateId, userId }: { templateId: string; userId: string }) {
+    return this.companyService.deleteTemplate(templateId, userId);
   }
 }
