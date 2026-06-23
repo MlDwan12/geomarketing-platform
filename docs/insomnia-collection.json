@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-06-21",
+  "__export_date": "2026-06-23",
   "__export_source": "geomarketing-platform",
   "resources": [
     {
@@ -24,8 +24,9 @@
         "test_email": "test@example.com",
         "test_password": "password123",
         "reset_token": "",
-        "brand_id": "54342908-b50e-4652-9c27-52cb21399f19",
-        "company_id": "6c15aa33-bd78-4ee0-8b90-39643a6b5913",
+        "brand_id": "",
+        "company_id": "",
+        "template_id": "",
         "twogis_org_id": "70000001056220281",
         "twogis_branch_id": "70000001056220282"
       },
@@ -39,6 +40,40 @@
       "parentId": "wrk_geo",
       "name": "Default Jar",
       "cookies": []
+    },
+
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Health",
+      "description": "Проверка состояния api-gateway и core-service."
+    },
+
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health (gateway)",
+      "method": "GET",
+      "url": "{{ base_url }}/",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_health_core",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health (core-service via RMQ)",
+      "method": "GET",
+      "url": "{{ base_url }}/health/core",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
     },
 
     {
@@ -90,7 +125,7 @@
       "name": "Me (current user)",
       "method": "GET",
       "url": "{{ base_url }}/auth/me",
-      "description": "Возвращает профиль текущего авторизованного пользователя. Требует активной сессии.",
+      "description": "Возвращает профиль текущего авторизованного пользователя.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -211,7 +246,7 @@
       "name": "List Brands",
       "method": "GET",
       "url": "{{ base_url }}/brands",
-      "description": "Все бренды текущего пользователя (через user_brands). Статусы: active, suspended, deleted.",
+      "description": "Все бренды текущего пользователя. Статусы: active, suspended, deleted.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -253,7 +288,7 @@
       "name": "Create Brand",
       "method": "POST",
       "url": "{{ base_url }}/brands",
-      "description": "Создаёт бренд, генерирует slug. Создаёт user_brands с ролью owner.",
+      "description": "Создаёт бренд, генерирует slug. Автоматически создаёт user_brands с ролью owner. Принимает multipart/form-data — поле logo опциональное.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Мой бренд\",\n  \"timezone\": \"Europe/Moscow\",\n  \"description\": \"Описание бренда\"\n}"
@@ -270,7 +305,7 @@
       "name": "Update Brand",
       "method": "PATCH",
       "url": "{{ base_url }}/brands/{{ brand_id }}",
-      "description": "Обновляет поля бренда. Только owner.",
+      "description": "Обновляет поля бренда. Принимает multipart/form-data с опциональным полем logo. Только owner.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Новое название\",\n  \"description\": \"Описание\",\n  \"timezone\": \"Europe/Moscow\"\n}"
@@ -281,11 +316,98 @@
     },
 
     {
+      "_id": "req_brands_delete",
+      "_type": "request",
+      "parentId": "fld_brands",
+      "name": "Delete Brand",
+      "method": "DELETE",
+      "url": "{{ base_url }}/brands/{{ brand_id }}",
+      "description": "Soft-delete: ставит status=deleted. Только owner. Возвращает 204.",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "fld_templates",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Templates",
+      "description": "Шаблоны карточек на уровне бренда. Содержат плоские дефолтные значения полей (names, phones, address и т.д.). Компания может подключить шаблон и переопределять отдельные поля через /companies/:id/default. Все запросы требуют X-Brand-Id и активной сессии."
+    },
+
+    {
+      "_id": "req_templates_list",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "List Templates",
+      "method": "GET",
+      "url": "{{ base_url }}/templates",
+      "description": "Все шаблоны бренда, отсортированы по createdAt.",
+      "body": {},
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_templates_create",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "Create Template",
+      "method": "POST",
+      "url": "{{ base_url }}/templates",
+      "description": "Создаёт шаблон. fields — плоский объект с дефолтными значениями полей карточки.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Основной шаблон\",\n  \"fields\": {\n    \"names\": [\n      { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" },\n      { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n    ],\n    \"phones\": [\n      { \"value\": \"+79001234567\", \"comment\": \"Основной\" }\n    ],\n    \"websites\": [\"https://example.com\"],\n    \"schedule\": {\n      \"Mon\": { \"working_hours\": [{ \"from\": \"09:00\", \"to\": \"18:00\" }] },\n      \"Tue\": { \"working_hours\": [{ \"from\": \"09:00\", \"to\": \"18:00\" }] },\n      \"Wed\": { \"working_hours\": [{ \"from\": \"09:00\", \"to\": \"18:00\" }] },\n      \"Thu\": { \"working_hours\": [{ \"from\": \"09:00\", \"to\": \"18:00\" }] },\n      \"Fri\": { \"working_hours\": [{ \"from\": \"09:00\", \"to\": \"18:00\" }] }\n    },\n    \"mainCategory\": { \"id\": \"666\", \"name\": \"Кофейня\" },\n    \"descriptions\": [\n      { \"lang\": \"ru\", \"val\": \"Сеть уютных кофеен\" }\n    ]\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_templates_update",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "Update Template",
+      "method": "PATCH",
+      "url": "{{ base_url }}/templates/{{ template_id }}",
+      "description": "Обновляет name и/или fields шаблона. Только участник бренда.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Обновлённый шаблон\",\n  \"fields\": {\n    \"names\": [\n      { \"lang\": \"ru\", \"val\": \"Новое название\" }\n    ]\n  }\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_templates_delete",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "Delete Template",
+      "method": "DELETE",
+      "url": "{{ base_url }}/templates/{{ template_id }}",
+      "description": "Удаляет шаблон. Компании которые его использовали — отвязываются (templateId → null), данные не теряются. Возвращает 204.",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
       "_id": "fld_companies",
       "_type": "request_group",
       "parentId": "wrk_geo",
       "name": "Companies",
-      "description": "CRUD компаний (филиалов). Все запросы требуют X-Brand-Id и активной сессии."
+      "description": "CRUD компаний (филиалов). Все запросы требуют активной сессии."
     },
 
     {
@@ -295,10 +417,13 @@
       "name": "List Companies",
       "method": "GET",
       "url": "{{ base_url }}/companies",
-      "description": "Все компании бренда. Возвращает базовые поля: name, rating, reviewCount, addressDisplay, status.",
+      "description": "Компании бренда с пагинацией. Возвращает { items, total, page, limit }.",
       "body": {},
       "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
-      "parameters": [],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "20" }
+      ],
       "authentication": {}
     },
 
@@ -309,7 +434,7 @@
       "name": "Get Company (full)",
       "method": "GET",
       "url": "{{ base_url }}/companies/{{ company_id }}",
-      "description": "Полный профиль компании: базовые поля + card (категории, расписание, контакты) + platforms (2GIS, Яндекс со статусами).",
+      "description": "Полный профиль: базовые поля + card + platforms.\n\ncard.fields — per-field структура:\n{\n  \"names\": {\n    \"isException\": true,       // true = своё значение, false = из шаблона\n    \"default\": [...],          // итоговое значение (из шаблона или компании)\n    \"platforms\": {             // только если есть переопределения\n      \"yandex\": [...]\n    }\n  }\n}",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -323,10 +448,10 @@
       "name": "Create Company",
       "method": "POST",
       "url": "{{ base_url }}/companies",
-      "description": "Создаёт компанию вручную. Автоматически создаёт пустую карточку и 2 платформы (2GIS + Яндекс = not_connected).",
+      "description": "Создаёт компанию. Автоматически создаёт company_defaults (пустой, можно указать templateId) и платформы yandex + twogis со статусом not_connected.",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Название филиала\",\n  \"code\": \"BRANCH-001\"\n}"
+        "text": "{\n  \"name\": \"Кофейня Арома на Ленина\",\n  \"code\": \"BRANCH-001\",\n  \"templateId\": \"\"\n}"
       },
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
@@ -337,13 +462,13 @@
     },
 
     {
-      "_id": "req_companies_get_card",
+      "_id": "req_companies_delete",
       "_type": "request",
       "parentId": "fld_companies",
-      "name": "Get Company Card",
-      "method": "GET",
-      "url": "{{ base_url }}/companies/{{ company_id }}/card",
-      "description": "Только JSONB карточка компании (без базовых полей и платформ).",
+      "name": "Delete Company",
+      "method": "DELETE",
+      "url": "{{ base_url }}/companies/{{ company_id }}",
+      "description": "Soft-delete: ставит status=deleted. Любой участник бренда. Возвращает 204.",
       "body": {},
       "headers": [],
       "parameters": [],
@@ -351,18 +476,60 @@
     },
 
     {
-      "_id": "req_companies_update_card",
+      "_id": "req_companies_update_default",
       "_type": "request",
       "parentId": "fld_companies",
-      "name": "Update Company Card",
+      "name": "Update Company Default (card)",
       "method": "PATCH",
-      "url": "{{ base_url }}/companies/{{ company_id }}/card",
-      "description": "Обновляет поля карточки. Передавай только изменяемые поля. Денормализует name и addressDisplay в таблицу companies.",
+      "url": "{{ base_url }}/companies/{{ company_id }}/default",
+      "description": "Обновляет карточку компании. Можно передать templateId и/или fieldOverrides.\n\nfieldOverrides — объект вида { fieldName: { isException, value?, platforms? } }.\nМердж на уровне поля: поля которые не указаны — не трогаются.\n\nЕсли isException: false — поле берётся из шаблона (value игнорируется).\nЕсли isException: true — используется value, опционально с переопределениями под платформы.",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"names\": [{\"lang\": \"ru\", \"val\": \"Название на русском\"}],\n  \"phones\": [{\"value\": \"+79001234567\", \"comment\": \"Основной\"}],\n  \"websites\": [\"https://example.com\"],\n  \"socials\": [{\"type\": \"vkontakte\", \"value\": \"https://vk.com/example\"}],\n  \"mainCategory\": {\"id\": \"666\", \"name\": \"PR и связи с общественностью\"},\n  \"descriptions\": [{\"lang\": \"ru\", \"val\": \"Описание компании\"}],\n  \"schedule\": {\n    \"Mon\": {\"working_hours\": [{\"from\": \"09:00\", \"to\": \"18:00\"}]},\n    \"Tue\": {\"working_hours\": [{\"from\": \"09:00\", \"to\": \"18:00\"}]}\n  }\n}"
+        "text": "{\n  \"templateId\": \"{{ template_id }}\",\n  \"fieldOverrides\": {\n    \"names\": {\n      \"isException\": true,\n      \"value\": [\n        { \"lang\": \"ru\", \"val\": \"Кофейня Арома1\" },\n        { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n      ],\n      \"platforms\": {\n        \"yandex\": [\n          { \"lang\": \"en\", \"val\": \"Aroma Coffee2\" }\n        ]\n      }\n    },\n    \"phones\": {\n      \"isException\": false\n    }\n  }\n}"
       },
       "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_update_platform",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Update Company Platform",
+      "method": "PATCH",
+      "url": "{{ base_url }}/companies/{{ company_id }}/platforms/yandex",
+      "description": "Обновляет настройки подключения платформы: isEnabled, orgId, orgName, status. platformKey в URL — произвольная строка (yandex, twogis, google и т.д.). Контентные переопределения хранятся в /default (fieldOverrides.*.platforms).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"isEnabled\": true,\n  \"orgId\": \"123456789\",\n  \"orgName\": \"Кофейня Арома\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "fld_upload",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Upload",
+      "description": "Загрузка файлов. Требует активной сессии."
+    },
+
+    {
+      "_id": "req_upload_logo",
+      "_type": "request",
+      "parentId": "fld_upload",
+      "name": "Upload Logo",
+      "method": "POST",
+      "url": "{{ base_url }}/upload/logo",
+      "description": "Загружает логотип (jpeg/png/webp/svg, до 2MB). Возвращает { url }. URL можно передать в logoUrl при создании/обновлении бренда.",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [{ "name": "file", "type": "file" }]
+      },
+      "headers": [],
       "parameters": [],
       "authentication": {}
     },
@@ -399,7 +566,7 @@
       "name": "Sync All Orgs (все бренды)",
       "method": "POST",
       "url": "{{ base_url }}/import/2gis/sync",
-      "description": "Синхронизирует все организации из ЛК 2ГИС. Активные орги → бренд active. Неактивные → бренд suspended. Уже импортированные филиалы (по orgId в company_platforms) → skipped. Подтягивает полные данные из Catalog API для каждого филиала.",
+      "description": "Синхронизирует все организации из ЛК 2ГИС. Активные → бренд active. Неактивные → бренд suspended. Уже импортированные филиалы (по orgId в company_platforms) — skipped.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"timezone\": \"Europe/Moscow\"\n}"
@@ -424,7 +591,7 @@
       "name": "2GIS — List Orgs",
       "method": "GET",
       "url": "{{ parser_url }}/2gis/account/orgs",
-      "description": "Возвращает все организации из ЛК 2ГИС (логин/пароль из env). Токен кэшируется 50 минут.",
+      "description": "Все организации из ЛК 2ГИС. Токен кэшируется 50 минут.",
       "body": {},
       "headers": [],
       "parameters": [],
