@@ -89,12 +89,13 @@ export class CompaniesController {
   }
 
   // PATCH /companies/:id/default
-  // Body: { templateId?, fieldOverrides? }
-  // fieldOverrides: { fieldName: { isException, value?, platforms? } }
+  // Body: { templateId?, fields? }
+  // fields: { fieldName: { isException, value?, platforms? } }
+  // Merge at field level — untouched fields stay as-is
   @Patch(':id/default')
   updateDefault(
     @Param('id') id: string,
-    @Body() dto: { templateId?: string | null; fieldOverrides?: Record<string, unknown> },
+    @Body() dto: { templateId?: string | null; fields?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(

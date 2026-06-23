@@ -60,7 +60,7 @@ export class CompanyController {
       companyId: string;
       userId: string;
       templateId?: string | null;
-      fieldOverrides?: FieldOverrides;
+      fields?: FieldOverrides;
     },
   ) {
     const { companyId, userId, ...rest } = dto;

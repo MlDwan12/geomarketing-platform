@@ -159,7 +159,7 @@ export class CompanyService {
     userId: string,
     dto: {
       templateId?: string | null;
-      fieldOverrides?: FieldOverrides;
+      fields?: FieldOverrides;
     },
   ) {
     const company = await this.getCompanyOrThrow(companyId);
@@ -175,9 +175,9 @@ export class CompanyService {
       def.templateId = dto.templateId;
     }
 
-    if (dto.fieldOverrides) {
+    if (dto.fields) {
       // Merge at field level — untouched fields stay as-is
-      def.fieldOverrides = { ...def.fieldOverrides, ...dto.fieldOverrides };
+      def.fieldOverrides = { ...def.fieldOverrides, ...dto.fields };
     }
 
     await this.defaultRepo.save(def);
