@@ -36,6 +36,11 @@ export class BrandController {
     return this.brandService.create(dto);
   }
 
+  @MessagePattern(Patterns.BRAND_DELETE)
+  delete(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
+    return this.brandService.delete(brandId, userId);
+  }
+
   @MessagePattern(Patterns.BRAND_UPDATE)
   update(
     @Payload()

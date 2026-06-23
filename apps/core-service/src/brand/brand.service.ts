@@ -87,6 +87,21 @@ export class BrandService {
     return brand;
   }
 
+  async delete(brandId: string, userId: string) {
+    const brand = await this.brandRepo.findOne({ where: { id: brandId } });
+
+    if (!brand || brand.status === BrandStatus.Deleted) {
+      throw new RpcException({ status: 404, message: 'Brand not found' });
+    }
+
+    if (brand.ownerId !== userId) {
+      throw new RpcException({ status: 403, message: 'Only owner can delete brand' });
+    }
+
+    brand.status = BrandStatus.Deleted;
+    await this.brandRepo.save(brand);
+  }
+
   async update(
     brandId: string,
     dto: {

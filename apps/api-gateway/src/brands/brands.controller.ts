@@ -3,6 +3,7 @@ import {
   Body,
   CallHandler,
   Controller,
+  Delete,
   ExecutionContext,
   Get,
   HttpCode,
@@ -143,6 +144,16 @@ export class BrandsController {
     return firstValueFrom(
       this.coreClient
         .send(Patterns.BRAND_CREATE, { ...dto, logoUrl, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.BRAND_DELETE, { brandId: id, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }

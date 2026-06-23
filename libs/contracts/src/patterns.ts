@@ -17,6 +17,7 @@ export const Patterns = {
   BRAND_GET:              'brand.get',
   BRAND_CREATE:           'brand.create',
   BRAND_UPDATE:           'brand.update',
+  BRAND_DELETE:           'brand.delete',
 
   // Companies
   COMPANY_LIST:                    'company.list',
