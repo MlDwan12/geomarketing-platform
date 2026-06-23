@@ -3,6 +3,7 @@ import { CoreServiceModule } from './core-service.module';
 import { ConfigService } from '@nestjs/config';
 import { Queues } from '@geo/contracts';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { RpcExceptionFilter } from './rpc-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(CoreServiceModule);
@@ -20,6 +21,8 @@ async function bootstrap() {
       },
     },
   });
+
+  app.useGlobalFilters(new RpcExceptionFilter());
 
   await app.startAllMicroservices();
 

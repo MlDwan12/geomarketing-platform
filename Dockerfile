@@ -77,6 +77,7 @@ ENV APP=${APP} \
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
+RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 # Запуск от непривилегированного пользователя (встроен в node:alpine).
 # Снижает риски при гипотетическом RCE: процесс не имеет root-привилегий.
 USER node

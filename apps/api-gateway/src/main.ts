@@ -17,12 +17,32 @@ async function bootstrap() {
   const uploadsDir = join(process.cwd(), 'uploads');
   mkdirSync(uploadsDir, { recursive: true });
 
-  const app = await NestFactory.create<NestExpressApplication>(ApiGatewayModule, {
-    logger: ['log', 'error', 'warn', 'debug'],
-  });
+  const app = await NestFactory.create<NestExpressApplication>(
+    ApiGatewayModule,
+    {
+      logger: ['log', 'error', 'warn', 'debug'],
+    },
+  );
   const configService = app.get(ConfigService);
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
-  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
+
+  app.useStaticAssets(uploadsDir, {
+    prefix: '/uploads',
+  });
+
+  app.use((req: any, _res: any, next: any) => {
+    if (req.method === 'POST' || req.method === 'PATCH') {
+      console.log(
+        `[DEBUG] ${req.method} ${req.url} | content-type: ${req.headers['content-type']}`,
+      );
+    }
+    next();
+  });
+
+  app.use((err, req, res, next) => {
+    console.error('GLOBAL ERROR:', err);
+    next(err);
+  });
 
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin;
