@@ -78,6 +78,16 @@ export class CompaniesController {
     );
   }
 
+  // GET /companies/:id/platforms — full connection data (orgId, connectedAt, syncError, ...)
+  @Get(':id/platforms')
+  getPlatforms(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.COMPANY_PLATFORMS_GET, { companyId: id, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
   // PATCH /companies/:id/default
   // Body: { templateId?, fieldOverrides? }
   // fieldOverrides: { fieldName: { isException, value?, platforms? } }

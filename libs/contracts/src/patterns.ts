@@ -27,6 +27,7 @@ export const Patterns = {
   COMPANY_DELETE:                  'company.delete',
   COMPANY_DEFAULT_UPDATE:          'company.default.update',
   COMPANY_PLATFORM_UPDATE:         'company.platform.update',
+  COMPANY_PLATFORMS_GET:           'company.platforms.get',
 
   // Templates
   TEMPLATE_LIST:   'template.list',

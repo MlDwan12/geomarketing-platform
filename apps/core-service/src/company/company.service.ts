@@ -11,6 +11,12 @@ import { UserBrand } from '../brand/user-brand.entity';
 
 const DEFAULT_PLATFORM_KEYS = ['yandex', 'twogis'];
 
+const LANG_MERGE_FIELDS = new Set([
+  'names', 'shortNames', 'altNames', 'descriptions', 'shortDescriptions',
+]);
+
+type LangItem = { lang: string; val: string };
+
 @Injectable()
 export class CompanyService {
   constructor(
@@ -65,15 +71,10 @@ export class CompanyService {
         templateId: def?.templateId ?? null,
         fields: this.assembleCardFields(def, template),
       },
-      platforms: platforms.map((p) => ({
+      platformsInfo: platforms.map((p) => ({
         platformKey: p.platformKey,
         isEnabled: p.isEnabled,
         status: p.status,
-        orgId: p.orgId,
-        orgName: p.orgName,
-        connectedAt: p.connectedAt,
-        lastSyncAt: p.lastSyncAt,
-        syncError: p.syncError,
       })),
     };
   }
@@ -286,6 +287,14 @@ export class CompanyService {
     await this.templateRepo.remove(template);
   }
 
+  // ── Get platforms (full connection data) ─────────────────────────────────
+
+  async getPlatforms(companyId: string, userId: string) {
+    const company = await this.getCompanyOrThrow(companyId);
+    await this.checkBrandAccess(company.brandId, userId);
+    return this.platformRepo.find({ where: { companyId } });
+  }
+
   // ── findByTwoGisOrgId (used by integration service) ──────────────────────
 
   async findByTwoGisOrgId(orgId: string): Promise<{ id: string; brandId: string } | null> {
@@ -316,12 +325,25 @@ export class CompanyService {
       const override = overrides[key] as FieldOverride | undefined;
       const templateValue = templateFields[key];
 
-      if (override?.platforms?.[platformKey] !== undefined) {
-        result[key] = override.platforms[platformKey];
-      } else if (override?.isException && override.value !== undefined) {
-        result[key] = override.value;
+      // Base value: company exception → template
+      let baseValue: unknown;
+      if (override?.isException && override.value !== undefined) {
+        baseValue = override.value;
       } else if (templateValue !== undefined) {
-        result[key] = templateValue;
+        baseValue = templateValue;
+      }
+
+      const platformOverride = override?.platforms?.[platformKey];
+
+      if (platformOverride !== undefined) {
+        // Multilingual fields: merge by lang key, not full replacement
+        if (LANG_MERGE_FIELDS.has(key) && Array.isArray(baseValue) && Array.isArray(platformOverride)) {
+          result[key] = this.mergeLangArrays(baseValue as LangItem[], platformOverride as LangItem[]);
+        } else {
+          result[key] = platformOverride;
+        }
+      } else if (baseValue !== undefined) {
+        result[key] = baseValue;
       }
     }
 
@@ -353,13 +375,21 @@ export class CompanyService {
         if (templateValue !== undefined) field['default'] = templateValue;
       }
 
-      if (override?.platforms && Object.keys(override.platforms).length > 0) {
-        field['platforms'] = override.platforms;
-      }
+      field['platforms'] = override?.platforms ?? {};
 
       result[key] = field;
     }
 
+    return result;
+  }
+
+  private mergeLangArrays(base: LangItem[], override: LangItem[]): LangItem[] {
+    const result = [...base];
+    for (const item of override) {
+      const idx = result.findIndex((i) => i.lang === item.lang);
+      if (idx >= 0) result[idx] = item;
+      else result.push(item);
+    }
     return result;
   }
 

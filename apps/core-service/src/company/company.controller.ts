@@ -48,6 +48,11 @@ export class CompanyController {
     return this.companyService.delete(companyId, userId);
   }
 
+  @MessagePattern(Patterns.COMPANY_PLATFORMS_GET)
+  getPlatforms(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
+    return this.companyService.getPlatforms(companyId, userId);
+  }
+
   @MessagePattern(Patterns.COMPANY_DEFAULT_UPDATE)
   updateDefault(
     @Payload()
