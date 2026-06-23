@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -63,6 +64,16 @@ export class CompaniesController {
     return firstValueFrom(
       this.coreClient
         .send(Patterns.COMPANY_GET, { companyId: id, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.COMPANY_DELETE, { companyId: id, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }

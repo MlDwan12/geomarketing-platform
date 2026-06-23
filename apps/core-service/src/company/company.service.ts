@@ -141,6 +141,16 @@ export class CompanyService {
     });
   }
 
+  // ── Delete ───────────────────────────────────────────────────────────────
+
+  async delete(companyId: string, userId: string) {
+    const company = await this.getCompanyOrThrow(companyId);
+    await this.checkBrandAccess(company.brandId, userId);
+
+    company.status = CompanyStatus.Deleted;
+    await this.companyRepo.save(company);
+  }
+
   // ── Update default (card data) ────────────────────────────────────────────
 
   async updateDefault(

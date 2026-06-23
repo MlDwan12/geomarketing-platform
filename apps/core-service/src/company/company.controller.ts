@@ -43,6 +43,11 @@ export class CompanyController {
     return this.companyService.findByTwoGisOrgId(orgId);
   }
 
+  @MessagePattern(Patterns.COMPANY_DELETE)
+  delete(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
+    return this.companyService.delete(companyId, userId);
+  }
+
   @MessagePattern(Patterns.COMPANY_DEFAULT_UPDATE)
   updateDefault(
     @Payload()

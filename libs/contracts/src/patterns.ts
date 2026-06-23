@@ -24,6 +24,7 @@ export const Patterns = {
   COMPANY_GET:                     'company.get',
   COMPANY_CREATE:                  'company.create',
   COMPANY_FIND_BY_TWOGIS_ORG_ID:   'company.findByTwoGisOrgId',
+  COMPANY_DELETE:                  'company.delete',
   COMPANY_DEFAULT_UPDATE:          'company.default.update',
   COMPANY_PLATFORM_UPDATE:         'company.platform.update',
 
