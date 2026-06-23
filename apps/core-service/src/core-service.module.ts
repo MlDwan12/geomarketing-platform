@@ -12,6 +12,7 @@ import { Init1750000000000 } from './migrations/1750000000000-Init';
 import { AddBrands1750000001000 } from './migrations/1750000001000-AddBrands';
 import { AddCompanies1750000002000 } from './migrations/1750000002000-AddCompanies';
 import { AddLastLoginAt1750000003000 } from './migrations/1750000003000-AddLastLoginAt';
+import { RefactorCompanySchema1750000004000 } from './migrations/1750000004000-RefactorCompanySchema';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { AddLastLoginAt1750000003000 } from './migrations/1750000003000-AddLastL
         synchronize: false,
         migrationsRun: true,
         extra: { options: '-c timezone=Europe/Moscow' },
-        migrations: [Init1750000000000, AddBrands1750000001000, AddCompanies1750000002000, AddLastLoginAt1750000003000],
+        migrations: [Init1750000000000, AddBrands1750000001000, AddCompanies1750000002000, AddLastLoginAt1750000003000, RefactorCompanySchema1750000004000],
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),
