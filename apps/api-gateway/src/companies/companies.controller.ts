@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { PageQueryDto } from '../common/page-query.dto';
 
 const RPC_TIMEOUT = 5000;
 
@@ -33,10 +35,11 @@ export class CompaniesController {
   list(
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
+    @Query() { page, limit }: PageQueryDto,
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_LIST, { brandId, userId: user.userId })
+        .send(Patterns.COMPANY_LIST, { brandId, userId: user.userId, page, limit })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -56,10 +59,7 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  get(
-    @Param('id') id: string,
-    @CurrentUser() user: { userId: string },
-  ) {
+  get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
     return firstValueFrom(
       this.coreClient
         .send(Patterns.COMPANY_GET, { companyId: id, userId: user.userId })
@@ -68,10 +68,7 @@ export class CompaniesController {
   }
 
   @Get(':id/card')
-  getCard(
-    @Param('id') id: string,
-    @CurrentUser() user: { userId: string },
-  ) {
+  getCard(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
     return firstValueFrom(
       this.coreClient
         .send(Patterns.COMPANY_GET_CARD, { companyId: id, userId: user.userId })
@@ -87,7 +84,11 @@ export class CompaniesController {
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_UPDATE_CARD, { companyId: id, userId: user.userId, fields })
+        .send(Patterns.COMPANY_UPDATE_CARD, {
+          companyId: id,
+          userId: user.userId,
+          fields,
+        })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }

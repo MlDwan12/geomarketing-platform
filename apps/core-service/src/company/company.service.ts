@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
+import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from './company.entity';
 import { CompanyCard } from './company-card.entity';
 import { CompanyPlatform, PlatformStatus, PlatformType } from './company-platform.entity';
@@ -21,13 +22,22 @@ export class CompanyService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async list(brandId: string, userId: string) {
+  async list(
+    brandId: string,
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<Paginated<Company>> {
     await this.checkBrandAccess(brandId, userId);
 
-    return this.companyRepo.find({
+    const [items, total] = await this.companyRepo.findAndCount({
       where: { brandId, status: Not(CompanyStatus.Deleted) },
       order: { createdAt: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return { items, total, page, limit };
   }
 
   async create(dto: {

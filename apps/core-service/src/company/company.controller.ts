@@ -9,8 +9,11 @@ export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
   @MessagePattern(Patterns.COMPANY_LIST)
-  list(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
-    return this.companyService.list(brandId, userId);
+  list(
+    @Payload()
+    { brandId, userId, page, limit }: { brandId: string; userId: string; page: number; limit: number },
+  ) {
+    return this.companyService.list(brandId, userId, page, limit);
   }
 
   @MessagePattern(Patterns.COMPANY_GET)
