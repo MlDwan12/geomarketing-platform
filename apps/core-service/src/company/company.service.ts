@@ -188,6 +188,7 @@ export class CompanyService {
 
     company.status = CompanyStatus.Deleted;
     await this.companyRepo.save(company);
+    return null;
   }
 
   // ── Update default (card data) ────────────────────────────────────────────
@@ -323,6 +324,7 @@ export class CompanyService {
     // Detach companies before deleting so they don't lose their data
     await this.defaultRepo.update({ templateId }, { templateId: null });
     await this.templateRepo.remove(template);
+    return null;
   }
 
   // ── Get platforms (full connection data) ─────────────────────────────────
@@ -445,6 +447,7 @@ export class CompanyService {
     const group = await this.getGroupOrThrow(groupId);
     await this.checkBrandAccess(group.brandId, userId);
     await this.groupRepo.remove(group);
+    return null;
   }
 
   async updateCompanyGroups(companyId: string, userId: string, groupIds: string[]) {
