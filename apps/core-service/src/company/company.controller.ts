@@ -99,6 +99,13 @@ export class CompanyController {
     return this.companyService.listGroupsStats(userId, search);
   }
 
+  @MessagePattern(Patterns.GROUP_REMOVE_COMPANIES)
+  removeCompaniesFromGroup(
+    @Payload() { groupId, userId, companyIds }: { groupId: string; userId: string; companyIds: string[] },
+  ) {
+    return this.companyService.removeCompaniesFromGroup(groupId, userId, companyIds);
+  }
+
   @MessagePattern(Patterns.GROUP_ADD_COMPANIES)
   addCompaniesToGroup(
     @Payload() { groupId, userId, companyIds }: { groupId: string; userId: string; companyIds: string[] },

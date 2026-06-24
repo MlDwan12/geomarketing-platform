@@ -376,6 +376,16 @@ export class CompanyService {
     }));
   }
 
+  async removeCompaniesFromGroup(groupId: string, userId: string, companyIds: string[]) {
+    const group = await this.getGroupOrThrow(groupId);
+    await this.checkBrandAccess(group.brandId, userId);
+
+    if (!companyIds.length) return { groupId, removed: 0 };
+
+    await this.groupMemberRepo.delete({ groupId, companyId: In(companyIds) });
+    return { groupId, removed: companyIds.length };
+  }
+
   async addCompaniesToGroup(groupId: string, userId: string, companyIds: string[]) {
     const group = await this.getGroupOrThrow(groupId);
     await this.checkBrandAccess(group.brandId, userId);

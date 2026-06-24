@@ -93,6 +93,20 @@ export class GroupsController {
     );
   }
 
+  @Delete(':id/companies')
+  @HttpCode(200)
+  removeCompanies(
+    @Param('id') groupId: string,
+    @Body() dto: { companyIds: string[] },
+    @CurrentUser() user: { userId: string },
+  ) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.GROUP_REMOVE_COMPANIES, { groupId, userId: user.userId, companyIds: dto.companyIds })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
   @Patch(':id')
   update(
     @Param('id') groupId: string,

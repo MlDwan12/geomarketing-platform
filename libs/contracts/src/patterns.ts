@@ -44,6 +44,7 @@ export const Patterns = {
   GROUP_DELETE:           'companyGroup.delete',
   GROUP_MEMBER_REMOVE:    'companyGroup.removeMember',
   GROUP_ADD_COMPANIES:    'companyGroup.addCompanies',
+  GROUP_REMOVE_COMPANIES: 'companyGroup.removeCompanies',
   COMPANY_GROUPS_UPDATE:  'company.groups.update',
 
   // Platforms

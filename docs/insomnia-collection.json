@@ -418,6 +418,23 @@
     },
 
     {
+      "_id": "req_groups_remove_companies",
+      "_type": "request",
+      "parentId": "fld_groups",
+      "name": "Remove Companies from Group",
+      "method": "DELETE",
+      "url": "{{ base_url }}/groups/{{ group_id }}/companies",
+      "description": "Удаляет конкретные компании из группы. Сами компании не удаляются.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
       "_id": "req_groups_update",
       "_type": "request",
       "parentId": "fld_groups",
