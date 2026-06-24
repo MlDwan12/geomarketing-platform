@@ -296,7 +296,51 @@ export class CompanyService {
 
   async listTemplates(brandId: string, userId: string) {
     await this.checkBrandAccess(brandId, userId);
-    return this.templateRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+    const templates = await this.templateRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+    return templates.map((t) => ({ id: t.id, name: t.name }));
+  }
+
+  async listTemplatesStats(userId: string) {
+    const userBrands = await this.userBrandRepo.find({ where: { userId } });
+    if (!userBrands.length) return [];
+
+    const brandIds = userBrands.map((b) => b.brandId);
+    const rows: { id: string; name: string; brandId: string; companiesCount: string }[] =
+      await this.dataSource.query(
+        `SELECT t.id, t.name, t."brandId", COUNT(d."companyId")::int AS "companiesCount"
+         FROM company_templates t
+         LEFT JOIN company_defaults d ON d."templateId" = t.id
+         WHERE t."brandId" = ANY($1)
+         GROUP BY t.id
+         ORDER BY t."createdAt" ASC`,
+        [brandIds],
+      );
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      brandId: r.brandId,
+      companiesCount: Number(r.companiesCount),
+    }));
+  }
+
+  async getTemplate(templateId: string, userId: string) {
+    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+    if (!template) throw new RpcException({ status: 404, message: 'Template not found' });
+    await this.checkBrandAccess(template.brandId, userId);
+
+    const defaults = await this.defaultRepo.find({ where: { templateId } });
+    const companies = defaults.length
+      ? await this.companyRepo.find({ where: { id: In(defaults.map((d) => d.companyId)) } })
+      : [];
+
+    return {
+      id: template.id,
+      name: template.name,
+      fields: template.fields,
+      companiesCount: companies.length,
+      companies: companies.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+    };
   }
 
   async createTemplate(dto: {
@@ -570,7 +614,7 @@ export class CompanyService {
         if (override?.value !== undefined) field['default'] = override.value;
         field['platforms'] = override?.platforms ?? {};
       } else {
-        const templateValue = templateFields[key];
+        const templateValue = (templateFields[key] as { default?: unknown } | undefined)?.default;
         if (override?.isException) {
           field['isException'] = true;
           if (override.value !== undefined) field['default'] = override.value;

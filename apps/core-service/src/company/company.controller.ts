@@ -152,6 +152,16 @@ export class CompanyController {
     return this.companyService.listTemplates(brandId, userId);
   }
 
+  @MessagePattern(Patterns.TEMPLATE_LIST_STATS)
+  listTemplatesStats(@Payload() { userId }: { userId: string }) {
+    return this.companyService.listTemplatesStats(userId);
+  }
+
+  @MessagePattern(Patterns.TEMPLATE_GET)
+  getTemplate(@Payload() { templateId, userId }: { templateId: string; userId: string }) {
+    return this.companyService.getTemplate(templateId, userId);
+  }
+
   @MessagePattern(Patterns.TEMPLATE_CREATE)
   createTemplate(
     @Payload()

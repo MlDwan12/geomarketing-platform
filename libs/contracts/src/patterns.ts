@@ -30,10 +30,12 @@ export const Patterns = {
   COMPANY_PLATFORMS_GET:           'company.platforms.get',
 
   // Templates
-  TEMPLATE_LIST:   'template.list',
-  TEMPLATE_CREATE: 'template.create',
-  TEMPLATE_UPDATE: 'template.update',
-  TEMPLATE_DELETE: 'template.delete',
+  TEMPLATE_LIST:        'template.list',
+  TEMPLATE_LIST_STATS:  'template.listStats',
+  TEMPLATE_GET:         'template.get',
+  TEMPLATE_CREATE:      'template.create',
+  TEMPLATE_UPDATE:      'template.update',
+  TEMPLATE_DELETE:      'template.delete',
 
   // Company groups
   GROUP_LIST:             'companyGroup.list',

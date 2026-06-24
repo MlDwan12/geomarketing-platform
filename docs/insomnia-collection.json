@@ -478,12 +478,40 @@
       "_id": "req_templates_list",
       "_type": "request",
       "parentId": "fld_templates",
-      "name": "List Templates",
+      "name": "List Templates (short)",
       "method": "GET",
       "url": "{{ base_url }}/templates",
-      "description": "Все шаблоны бренда, отсортированы по createdAt.",
+      "description": "Короткий список шаблонов бренда [{ id, name }] — для дропдаунов.",
       "body": {},
       "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_templates_list_stats",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "List Templates Stats (все бренды)",
+      "method": "GET",
+      "url": "{{ base_url }}/templates/stats",
+      "description": "Шаблоны по всем брендам юзера с кол. компаний [{ id, name, brandId, companiesCount }]. X-Brand-Id не нужен.",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_templates_get",
+      "_type": "request",
+      "parentId": "fld_templates",
+      "name": "Get Template",
+      "method": "GET",
+      "url": "{{ base_url }}/templates/{{ template_id }}",
+      "description": "Шаблон с полями и списком компаний. Возвращает: { id, name, fields, companiesCount, companies: [{ id, name, slug }] }",
+      "body": {},
+      "headers": [],
       "parameters": [],
       "authentication": {}
     },
@@ -495,10 +523,10 @@
       "name": "Create Template",
       "method": "POST",
       "url": "{{ base_url }}/templates",
-      "description": "Создаёт шаблон. fields — плоский объект с дефолтными значениями полей карточки.",
+      "description": "Создаёт шаблон. fields — объект с выбранными полями, каждое в формате { default: value }.\nТолько нужные поля — остальные не включай.",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Основной шаблон\",\n  \"fields\": {\n    \"names\": [\n      { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" },\n      { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n    ],\n    \"phones\": [\n      { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n    ],\n    \"schedule\": {\n      \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n      \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n    },\n    \"mainCategory\": { \"id\": \"coffee\", \"name\": \"Кофейня\" },\n    \"descriptions\": [\n      { \"lang\": \"ru\", \"val\": \"Сеть уютных кофеен\" }\n    ]\n  }\n}"
+        "text": "{\n  \"name\": \"Основной шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" },\n        { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    },\n    \"schedule\": {\n      \"default\": {\n        \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n        \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n      }\n    },\n    \"mainCategory\": {\n      \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n    },\n    \"descriptions\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Сеть уютных кофеен\" }\n      ]\n    }\n  }\n}"
       },
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
@@ -515,10 +543,10 @@
       "name": "Update Template",
       "method": "PATCH",
       "url": "{{ base_url }}/templates/{{ template_id }}",
-      "description": "Обновляет name и/или fields шаблона.",
+      "description": "Обновляет name и/или fields шаблона. fields — полная замена (передавай все нужные поля).",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Обновлённый шаблон\",\n  \"fields\": {\n    \"names\": [\n      { \"lang\": \"ru\", \"val\": \"Новое название\" }\n    ]\n  }\n}"
+        "text": "{\n  \"name\": \"Обновлённый шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Новое название\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    }\n  }\n}"
       },
       "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],

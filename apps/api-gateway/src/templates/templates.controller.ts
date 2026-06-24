@@ -30,7 +30,7 @@ export class TemplatesController {
     private readonly coreClient: ClientProxy,
   ) {}
 
-  // GET /templates  (x-brand-id header)
+  // GET /templates  — короткий список [{ id, name }] для дропдаунов (x-brand-id)
   @Get()
   list(
     @Headers('x-brand-id') brandId: string,
@@ -43,9 +43,29 @@ export class TemplatesController {
     );
   }
 
+  // GET /templates/stats — все шаблоны по всем брендам с кол. компаний
+  @Get('stats')
+  listStats(@CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.TEMPLATE_LIST_STATS, { userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  // GET /templates/:id — шаблон с полями и списком компаний
+  @Get(':id')
+  get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.TEMPLATE_GET, { templateId: id, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
   // POST /templates
   // Body: { name, fields }
-  // fields: { names: [...], phones: [...], address: {...}, ... }
+  // fields: { names: { default: [...] }, phones: { default: [...] }, ... }
   @Post()
   @HttpCode(201)
   create(
