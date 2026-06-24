@@ -10,6 +10,7 @@ export enum CompanyStatus {
   Draft = 'draft',
   Active = 'active',
   TemporarilyClosed = 'temporarily_closed',
+  Closed = 'closed',
   Suspended = 'suspended',
   Deleted = 'deleted',
 }

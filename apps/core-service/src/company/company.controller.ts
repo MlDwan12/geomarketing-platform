@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
 import { CompanyService } from './company.service';
 import { FieldOverrides } from './company-default.entity';
+import { CompanyStatus } from './company.entity';
 import { PlatformStatus } from './company-platform.entity';
 
 @Controller()
@@ -29,10 +30,12 @@ export class CompanyController {
       brandId: string;
       userId: string;
       name: string;
+      status?: CompanyStatus;
       code?: string;
       twoGisOrgId?: string;
-      addressDisplay?: string;
       templateId?: string;
+      groupIds?: string[];
+      fieldOverrides?: FieldOverrides;
     },
   ) {
     return this.companyService.create(dto);
@@ -82,6 +85,35 @@ export class CompanyController {
   ) {
     const { companyId, userId, platformKey, ...rest } = dto;
     return this.companyService.updatePlatform(companyId, userId, platformKey, rest);
+  }
+
+  // ── Groups ────────────────────────────────────────────────────────────────
+
+  @MessagePattern(Patterns.GROUP_LIST)
+  listGroups(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
+    return this.companyService.listGroups(brandId, userId);
+  }
+
+  @MessagePattern(Patterns.GROUP_CREATE)
+  createGroup(@Payload() dto: { brandId: string; userId: string; name: string }) {
+    return this.companyService.createGroup(dto);
+  }
+
+  @MessagePattern(Patterns.GROUP_UPDATE)
+  updateGroup(@Payload() { groupId, userId, name }: { groupId: string; userId: string; name: string }) {
+    return this.companyService.updateGroup(groupId, userId, name);
+  }
+
+  @MessagePattern(Patterns.GROUP_DELETE)
+  deleteGroup(@Payload() { groupId, userId }: { groupId: string; userId: string }) {
+    return this.companyService.deleteGroup(groupId, userId);
+  }
+
+  @MessagePattern(Patterns.COMPANY_GROUPS_UPDATE)
+  updateCompanyGroups(
+    @Payload() { companyId, userId, groupIds }: { companyId: string; userId: string; groupIds: string[] },
+  ) {
+    return this.companyService.updateCompanyGroups(companyId, userId, groupIds);
   }
 
   // ── Templates ─────────────────────────────────────────────────────────────

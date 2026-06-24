@@ -4,6 +4,8 @@ import { Company } from './company.entity';
 import { CompanyDefault } from './company-default.entity';
 import { CompanyTemplate } from './company-template.entity';
 import { CompanyPlatform } from './company-platform.entity';
+import { CompanyGroup } from './company-group.entity';
+import { CompanyGroupMember } from './company-group-member.entity';
 import { UserBrand } from '../brand/user-brand.entity';
 import { CompanyController } from './company.controller';
 import { CompanyService } from './company.service';
@@ -15,6 +17,8 @@ import { CompanyService } from './company.service';
       CompanyDefault,
       CompanyTemplate,
       CompanyPlatform,
+      CompanyGroup,
+      CompanyGroupMember,
       UserBrand,
     ]),
   ],

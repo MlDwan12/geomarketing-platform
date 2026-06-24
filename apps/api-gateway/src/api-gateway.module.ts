@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { BrandsModule } from './brands/brands.module';
 import { CompaniesModule } from './companies/companies.module';
 import { TemplatesModule } from './templates/templates.module';
+import { GroupsModule } from './groups/groups.module';
 import { TwoGisImportModule } from './import/two-gis-import.module';
 import { UploadModule } from './upload/upload.module';
 
@@ -33,6 +34,7 @@ import { UploadModule } from './upload/upload.module';
     AuthModule,
     BrandsModule,
     CompaniesModule,
+    GroupsModule,
     TemplatesModule,
     TwoGisImportModule,
     UploadModule,

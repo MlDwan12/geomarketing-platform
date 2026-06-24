@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from './company.entity';
 import { CompanyDefault, FieldOverride, FieldOverrides } from './company-default.entity';
 import { CompanyTemplate } from './company-template.entity';
 import { CompanyPlatform, PlatformStatus } from './company-platform.entity';
+import { CompanyGroup } from './company-group.entity';
+import { CompanyGroupMember } from './company-group-member.entity';
 import { UserBrand } from '../brand/user-brand.entity';
 
 const DEFAULT_PLATFORM_KEYS = ['yandex', 'twogis'];
@@ -28,6 +30,10 @@ export class CompanyService {
     private readonly templateRepo: Repository<CompanyTemplate>,
     @InjectRepository(CompanyPlatform)
     private readonly platformRepo: Repository<CompanyPlatform>,
+    @InjectRepository(CompanyGroup)
+    private readonly groupRepo: Repository<CompanyGroup>,
+    @InjectRepository(CompanyGroupMember)
+    private readonly groupMemberRepo: Repository<CompanyGroupMember>,
     @InjectRepository(UserBrand)
     private readonly userBrandRepo: Repository<UserBrand>,
     private readonly dataSource: DataSource,
@@ -85,12 +91,12 @@ export class CompanyService {
     brandId: string;
     userId: string;
     name: string;
+    status?: CompanyStatus;
     code?: string;
     twoGisOrgId?: string;
-    addressDisplay?: string;
-    rating?: number | null;
-    reviewCount?: number;
     templateId?: string;
+    groupIds?: string[];
+    fieldOverrides?: FieldOverrides;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
 
@@ -102,11 +108,11 @@ export class CompanyService {
           brandId: dto.brandId,
           name: dto.name,
           slug,
-          status: CompanyStatus.Draft,
+          status: dto.status ?? CompanyStatus.Draft,
           code: dto.code ?? null,
-          addressDisplay: dto.addressDisplay ?? null,
-          rating: dto.rating ?? null,
-          reviewCount: dto.reviewCount ?? 0,
+          addressDisplay: null,
+          rating: null,
+          reviewCount: 0,
         }),
       );
 
@@ -114,7 +120,7 @@ export class CompanyService {
         em.create(CompanyDefault, {
           companyId: company.id,
           templateId: dto.templateId ?? null,
-          fieldOverrides: {},
+          fieldOverrides: dto.fieldOverrides ?? {},
         }),
       );
 
@@ -137,6 +143,14 @@ export class CompanyService {
           }),
         ),
       );
+
+      if (dto.groupIds?.length) {
+        await em.save(
+          dto.groupIds.map((groupId) =>
+            em.create(CompanyGroupMember, { groupId, companyId: company.id }),
+          ),
+        );
+      }
 
       return company;
     });
@@ -295,6 +309,57 @@ export class CompanyService {
     return this.platformRepo.find({ where: { companyId } });
   }
 
+  // ── Groups ───────────────────────────────────────────────────────────────
+
+  async listGroups(brandId: string, userId: string) {
+    await this.checkBrandAccess(brandId, userId);
+    return this.groupRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+  }
+
+  async createGroup(dto: { brandId: string; userId: string; name: string }) {
+    await this.checkBrandAccess(dto.brandId, dto.userId);
+    return this.groupRepo.save(
+      this.groupRepo.create({ brandId: dto.brandId, name: dto.name }),
+    );
+  }
+
+  async updateGroup(groupId: string, userId: string, name: string) {
+    const group = await this.getGroupOrThrow(groupId);
+    await this.checkBrandAccess(group.brandId, userId);
+    group.name = name;
+    return this.groupRepo.save(group);
+  }
+
+  async deleteGroup(groupId: string, userId: string) {
+    const group = await this.getGroupOrThrow(groupId);
+    await this.checkBrandAccess(group.brandId, userId);
+    await this.groupRepo.remove(group);
+  }
+
+  async updateCompanyGroups(companyId: string, userId: string, groupIds: string[]) {
+    const company = await this.getCompanyOrThrow(companyId);
+    await this.checkBrandAccess(company.brandId, userId);
+
+    if (groupIds.length) {
+      const validGroups = await this.groupRepo.find({
+        where: { id: In(groupIds), brandId: company.brandId },
+      });
+      if (validGroups.length !== groupIds.length) {
+        throw new RpcException({ status: 400, message: 'One or more group IDs are invalid' });
+      }
+    }
+
+    return this.dataSource.transaction(async (em) => {
+      await em.delete(CompanyGroupMember, { companyId });
+      if (groupIds.length) {
+        await em.save(
+          groupIds.map((groupId) => em.create(CompanyGroupMember, { groupId, companyId })),
+        );
+      }
+      return { companyId, groupIds };
+    });
+  }
+
   // ── findByTwoGisOrgId (used by integration service) ──────────────────────
 
   async findByTwoGisOrgId(orgId: string): Promise<{ id: string; brandId: string } | null> {
@@ -325,9 +390,9 @@ export class CompanyService {
       const override = overrides[key] as FieldOverride | undefined;
       const templateValue = templateFields[key];
 
-      // Base value: company exception → template
+      // Base value priority: company value (no template) → exception override → template
       let baseValue: unknown;
-      if (override?.isException && override.value !== undefined) {
+      if (override?.value !== undefined && override?.isException !== false) {
         baseValue = override.value;
       } else if (templateValue !== undefined) {
         baseValue = templateValue;
@@ -352,7 +417,9 @@ export class CompanyService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  // Builds the per-field response: { fieldName: { isException, default, platforms? } }
+  // Builds the per-field response.
+  // No template:   { value, platforms }
+  // With template: { isException, default, platforms }
   private assembleCardFields(
     def: CompanyDefault | null,
     template: CompanyTemplate | null,
@@ -364,18 +431,22 @@ export class CompanyService {
 
     for (const key of allKeys) {
       const override = overrides[key] as FieldOverride | undefined;
-      const templateValue = templateFields[key];
       const field: Record<string, unknown> = {};
 
-      if (override?.isException) {
-        field['isException'] = true;
-        if (override.value !== undefined) field['default'] = override.value;
+      if (template === null) {
+        if (override?.value !== undefined) field['value'] = override.value;
+        field['platforms'] = override?.platforms ?? {};
       } else {
-        field['isException'] = false;
-        if (templateValue !== undefined) field['default'] = templateValue;
+        const templateValue = templateFields[key];
+        if (override?.isException) {
+          field['isException'] = true;
+          if (override.value !== undefined) field['default'] = override.value;
+        } else {
+          field['isException'] = false;
+          if (templateValue !== undefined) field['default'] = templateValue;
+        }
+        field['platforms'] = override?.platforms ?? {};
       }
-
-      field['platforms'] = override?.platforms ?? {};
 
       result[key] = field;
     }
@@ -401,6 +472,12 @@ export class CompanyService {
     }
 
     return company;
+  }
+
+  private async getGroupOrThrow(groupId: string): Promise<CompanyGroup> {
+    const group = await this.groupRepo.findOne({ where: { id: groupId } });
+    if (!group) throw new RpcException({ status: 404, message: 'Group not found' });
+    return group;
   }
 
   private async checkBrandAccess(brandId: string, userId: string): Promise<void> {

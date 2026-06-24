@@ -41,6 +41,7 @@ export const Patterns = {
   GROUP_UPDATE:           'companyGroup.update',
   GROUP_DELETE:           'companyGroup.delete',
   GROUP_MEMBER_REMOVE:    'companyGroup.removeMember',
+  COMPANY_GROUPS_UPDATE:  'company.groups.update',
 
   // Platforms
   PLATFORM_GET:           'platform.get',

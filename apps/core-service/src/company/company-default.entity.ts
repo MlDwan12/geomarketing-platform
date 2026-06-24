@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 export interface FieldOverride<T = unknown> {
-  isException: boolean;
+  isException?: boolean; // undefined when no template — field just has a value
   value?: T;
   platforms?: Record<string, T>;
 }

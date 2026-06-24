@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -49,12 +50,40 @@ export class CompaniesController {
   @HttpCode(201)
   create(
     @Headers('x-brand-id') brandId: string,
-    @Body() dto: { name: string; code?: string; twoGisOrgId?: string; templateId?: string },
+    @Body() body: Record<string, unknown>,
     @CurrentUser() user: { userId: string },
   ) {
+    const { status, templateId, groups, code, twoGisOrgId, ...rawFields } = body as {
+      status?: string;
+      templateId?: string | null;
+      groups?: { id: string }[];
+      code?: string;
+      twoGisOrgId?: string;
+      [key: string]: unknown;
+    };
+
+    const namesField = rawFields.names as { default: { val: string }[] } | undefined;
+    if (!namesField?.default?.length || !namesField.default[0]?.val) {
+      throw new BadRequestException('names.default[0].val is required');
+    }
+    const name = namesField.default[0].val;
+
+    const fieldOverrides = buildFieldOverrides(rawFields);
+    const groupIds = groups?.map((g) => g.id) ?? [];
+
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_CREATE, { ...dto, brandId, userId: user.userId })
+        .send(Patterns.COMPANY_CREATE, {
+          brandId,
+          userId: user.userId,
+          name,
+          status,
+          templateId: templateId ?? null,
+          code,
+          twoGisOrgId,
+          groupIds,
+          fieldOverrides,
+        })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -109,6 +138,25 @@ export class CompaniesController {
     );
   }
 
+  // PATCH /companies/:id/groups
+  // Body: { groupIds: string[] }
+  @Patch(':id/groups')
+  updateGroups(
+    @Param('id') id: string,
+    @Body() dto: { groupIds: string[] },
+    @CurrentUser() user: { userId: string },
+  ) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.COMPANY_GROUPS_UPDATE, {
+          companyId: id,
+          userId: user.userId,
+          groupIds: dto.groupIds,
+        })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
   // PATCH /companies/:id/platforms/:platformKey
   // Body: { isEnabled?, orgId?, orgName?, status? }
   @Patch(':id/platforms/:platformKey')
@@ -129,4 +177,14 @@ export class CompaniesController {
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
+}
+
+// Converts frontend field format to internal fieldOverrides storage format.
+// All card fields use { default: value } wrapper — strips it to { value: value }.
+function buildFieldOverrides(fields: Record<string, unknown>): Record<string, { value: unknown }> {
+  const result: Record<string, { value: unknown }> = {};
+  for (const [key, val] of Object.entries(fields)) {
+    result[key] = { value: (val as { default: unknown }).default };
+  }
+  return result;
 }
