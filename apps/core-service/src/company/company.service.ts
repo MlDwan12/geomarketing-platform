@@ -66,9 +66,9 @@ export class CompanyService {
     await this.checkBrandAccess(company.brandId, userId);
 
     const [def, platforms, groupMembers] = await Promise.all([
-      this.defaultRepo.findOne({ where: { companyId } }),
-      this.platformRepo.find({ where: { companyId } }),
-      this.groupMemberRepo.find({ where: { companyId } }),
+      this.defaultRepo.findOne({ where: { companyId: company.id } }),
+      this.platformRepo.find({ where: { companyId: company.id } }),
+      this.groupMemberRepo.find({ where: { companyId: company.id } }),
     ]);
 
     const template = def?.templateId
