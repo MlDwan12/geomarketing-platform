@@ -65,14 +65,23 @@ export class CompanyService {
     const company = await this.getCompanyOrThrow(companyId);
     await this.checkBrandAccess(company.brandId, userId);
 
-    const def = await this.defaultRepo.findOne({ where: { companyId } });
+    const [def, platforms, groupMembers] = await Promise.all([
+      this.defaultRepo.findOne({ where: { companyId } }),
+      this.platformRepo.find({ where: { companyId } }),
+      this.groupMemberRepo.find({ where: { companyId } }),
+    ]);
+
     const template = def?.templateId
       ? await this.templateRepo.findOne({ where: { id: def.templateId } })
       : null;
-    const platforms = await this.platformRepo.find({ where: { companyId } });
+
+    const groups = groupMembers.length
+      ? await this.groupRepo.find({ where: { id: In(groupMembers.map((m) => m.groupId)) } })
+      : [];
 
     return {
       ...company,
+      groups: groups.map((g) => ({ id: g.id, name: g.name })),
       card: {
         templateId: def?.templateId ?? null,
         fields: this.assembleCardFields(def, template),
@@ -95,7 +104,7 @@ export class CompanyService {
     code?: string;
     twoGisOrgId?: string;
     templateId?: string;
-    groupIds?: string[];
+    groups?: { id?: string; name?: string }[];
     fieldOverrides?: FieldOverrides;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
@@ -144,12 +153,27 @@ export class CompanyService {
         ),
       );
 
-      if (dto.groupIds?.length) {
-        await em.save(
-          dto.groupIds.map((groupId) =>
-            em.create(CompanyGroupMember, { groupId, companyId: company.id }),
-          ),
-        );
+      if (dto.groups?.length) {
+        const groupIds: string[] = [];
+
+        for (const g of dto.groups) {
+          if (g.id) {
+            groupIds.push(g.id);
+          } else if (g.name) {
+            const newGroup = await em.save(
+              em.create(CompanyGroup, { brandId: dto.brandId, name: g.name }),
+            );
+            groupIds.push(newGroup.id);
+          }
+        }
+
+        if (groupIds.length) {
+          await em.save(
+            groupIds.map((groupId) =>
+              em.create(CompanyGroupMember, { groupId, companyId: company.id }),
+            ),
+          );
+        }
       }
 
       return company;

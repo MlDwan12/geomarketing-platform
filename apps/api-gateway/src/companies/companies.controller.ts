@@ -69,8 +69,6 @@ export class CompaniesController {
     const name = namesField.default[0].val;
 
     const fieldOverrides = buildFieldOverrides(rawFields);
-    const groupIds = groups?.map((g) => g.id) ?? [];
-
     return firstValueFrom(
       this.coreClient
         .send(Patterns.COMPANY_CREATE, {
@@ -81,7 +79,7 @@ export class CompaniesController {
           templateId: templateId ?? null,
           code,
           twoGisOrgId,
-          groupIds,
+          groups: groups ?? [],
           fieldOverrides,
         })
         .pipe(timeout(RPC_TIMEOUT)),

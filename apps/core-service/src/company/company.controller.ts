@@ -34,7 +34,7 @@ export class CompanyController {
       code?: string;
       twoGisOrgId?: string;
       templateId?: string;
-      groupIds?: string[];
+      groups?: { id?: string; name?: string }[];
       fieldOverrides?: FieldOverrides;
     },
   ) {
