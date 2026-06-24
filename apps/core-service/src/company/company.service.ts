@@ -191,6 +191,25 @@ export class CompanyService {
     return null;
   }
 
+  // ── Main data (form endpoint) ─────────────────────────────────────────────
+
+  async getMainData(companyIdOrSlug: string, userId: string) {
+    const full = (await this.get(companyIdOrSlug, userId)) as Record<string, unknown> & {
+      card: { templateId: string | null; fields: Record<string, unknown> };
+    };
+    return {
+      id: full['id'],
+      name: full['name'],
+      groups: full['groups'],
+      platformsInfo: full['platformsInfo'],
+      templateId: full.card.templateId,
+      fields: {
+        status: full['status'],
+        ...full.card.fields,
+      },
+    };
+  }
+
   // ── Update default (card data) ────────────────────────────────────────────
 
   async updateDefault(
@@ -548,7 +567,7 @@ export class CompanyService {
       const field: Record<string, unknown> = {};
 
       if (template === null) {
-        if (override?.value !== undefined) field['value'] = override.value;
+        if (override?.value !== undefined) field['default'] = override.value;
         field['platforms'] = override?.platforms ?? {};
       } else {
         const templateValue = templateFields[key];

@@ -133,6 +133,11 @@ export class CompanyController {
     return this.companyService.deleteGroup(groupId, userId);
   }
 
+  @MessagePattern(Patterns.COMPANY_MAIN_DATA_GET)
+  getMainData(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
+    return this.companyService.getMainData(companyId, userId);
+  }
+
   @MessagePattern(Patterns.COMPANY_GROUPS_UPDATE)
   updateCompanyGroups(
     @Payload() { companyId, userId, groupIds }: { companyId: string; userId: string; groupIds: string[] },

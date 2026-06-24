@@ -46,6 +46,7 @@ export const Patterns = {
   GROUP_ADD_COMPANIES:    'companyGroup.addCompanies',
   GROUP_REMOVE_COMPANIES: 'companyGroup.removeCompanies',
   COMPANY_GROUPS_UPDATE:  'company.groups.update',
+  COMPANY_MAIN_DATA_GET:    'company.mainData.get',
 
   // Platforms
   PLATFORM_GET:           'platform.get',

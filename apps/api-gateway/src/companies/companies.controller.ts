@@ -155,6 +155,16 @@ export class CompaniesController {
     );
   }
 
+  // GET /companies/:slug/main_data
+  @Get(':slug/main_data')
+  getMainData(@Param('slug') slug: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.COMPANY_MAIN_DATA_GET, { companyId: slug, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
   // PATCH /companies/:id/platforms/:platformKey
   // Body: { isEnabled?, orgId?, orgName?, status? }
   @Patch(':id/platforms/:platformKey')

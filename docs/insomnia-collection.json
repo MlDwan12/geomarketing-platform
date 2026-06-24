@@ -26,6 +26,7 @@
         "reset_token": "",
         "brand_id": "",
         "company_id": "",
+        "company_slug": "",
         "template_id": "",
         "group_id": "",
         "twogis_org_id": "70000001056220281",
@@ -593,6 +594,20 @@
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
       ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_company_main_data_get",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Get Company Main Data (form)",
+      "method": "GET",
+      "url": "{{ base_url }}/companies/{{ company_slug }}/main_data",
+      "description": "Данные для формы редактирования.\nВозвращает: { id, name, groups, platformsInfo, templateId, fields: { status, names, phones, ... } }\n\nfield без шаблона: { default: ..., platforms: {} }\nfield с шаблоном:  { isException: bool, default: ..., platforms: {} }",
+      "body": {},
+      "headers": [],
       "parameters": [],
       "authentication": {}
     },
