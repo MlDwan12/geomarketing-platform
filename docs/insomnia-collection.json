@@ -342,13 +342,27 @@
       "_id": "req_groups_list",
       "_type": "request",
       "parentId": "fld_groups",
-      "name": "List Groups",
+      "name": "List Groups (short)",
       "method": "GET",
       "url": "{{ base_url }}/groups",
-      "description": "Все группы бренда, отсортированы по createdAt.",
+      "description": "Короткий список групп бренда [{ id, name }] — для дропдаунов. Поддерживает ?search=.",
       "body": {},
       "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
-      "parameters": [],
+      "parameters": [{ "name": "search", "value": "", "disabled": true }],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_groups_stats",
+      "_type": "request",
+      "parentId": "fld_groups",
+      "name": "List Groups Stats (все бренды)",
+      "method": "GET",
+      "url": "{{ base_url }}/groups/stats",
+      "description": "Группы по всем брендам юзера с кол. компаний [{ id, name, brandId, companiesCount }]. X-Brand-Id не нужен. Поддерживает ?search=.",
+      "body": {},
+      "headers": [],
+      "parameters": [{ "name": "search", "value": "", "disabled": true }],
       "authentication": {}
     },
 
@@ -368,6 +382,37 @@
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
       ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_groups_get",
+      "_type": "request",
+      "parentId": "fld_groups",
+      "name": "Get Group",
+      "method": "GET",
+      "url": "{{ base_url }}/groups/{{ group_id }}",
+      "description": "Конкретная группа. Возвращает:\n{\n  id, name, companiesCount,\n  companies: [{ id, name }]\n}",
+      "body": {},
+      "headers": [],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_groups_add_companies",
+      "_type": "request",
+      "parentId": "fld_groups",
+      "name": "Add Companies to Group",
+      "method": "POST",
+      "url": "{{ base_url }}/groups/{{ group_id }}/companies",
+      "description": "Добавляет компании в группу. Дубликаты игнорируются. Компании должны принадлежать тому же бренду что и группа.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "parameters": [],
       "authentication": {}
     },

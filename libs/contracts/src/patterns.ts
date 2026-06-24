@@ -37,10 +37,13 @@ export const Patterns = {
 
   // Company groups
   GROUP_LIST:             'companyGroup.list',
+  GROUP_LIST_STATS:       'companyGroup.listStats',
+  GROUP_GET:              'companyGroup.get',
   GROUP_CREATE:           'companyGroup.create',
   GROUP_UPDATE:           'companyGroup.update',
   GROUP_DELETE:           'companyGroup.delete',
   GROUP_MEMBER_REMOVE:    'companyGroup.removeMember',
+  GROUP_ADD_COMPANIES:    'companyGroup.addCompanies',
   COMPANY_GROUPS_UPDATE:  'company.groups.update',
 
   // Platforms

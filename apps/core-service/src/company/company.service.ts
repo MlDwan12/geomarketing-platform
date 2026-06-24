@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Not, Repository } from 'typeorm';
+import { DataSource, ILike, In, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from './company.entity';
@@ -335,9 +335,86 @@ export class CompanyService {
 
   // ── Groups ───────────────────────────────────────────────────────────────
 
-  async listGroups(brandId: string, userId: string) {
+  async listGroups(brandId: string, userId: string, search?: string) {
     await this.checkBrandAccess(brandId, userId);
-    return this.groupRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+    const groups = await this.groupRepo.find({
+      where: { brandId, ...(search ? { name: ILike(`%${search}%`) } : {}) },
+      order: { createdAt: 'ASC' },
+    });
+    return groups.map((g) => ({ id: g.id, name: g.name }));
+  }
+
+  async listGroupsStats(userId: string, search?: string) {
+    const userBrands = await this.userBrandRepo.find({ where: { userId } });
+    if (!userBrands.length) return [];
+
+    const brandIds = userBrands.map((b) => b.brandId);
+    const params: unknown[] = [brandIds];
+    let searchClause = '';
+
+    if (search) {
+      params.push(`%${search}%`);
+      searchClause = `AND g.name ILIKE $${params.length}`;
+    }
+
+    const rows: { id: string; name: string; brandId: string; companiesCount: string }[] =
+      await this.dataSource.query(
+        `SELECT g.id, g.name, g."brandId", COUNT(m."companyId")::int AS "companiesCount"
+         FROM company_groups g
+         LEFT JOIN company_group_members m ON m."groupId" = g.id
+         WHERE g."brandId" = ANY($1) ${searchClause}
+         GROUP BY g.id
+         ORDER BY g."createdAt" ASC`,
+        params,
+      );
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      brandId: r.brandId,
+      companiesCount: Number(r.companiesCount),
+    }));
+  }
+
+  async addCompaniesToGroup(groupId: string, userId: string, companyIds: string[]) {
+    const group = await this.getGroupOrThrow(groupId);
+    await this.checkBrandAccess(group.brandId, userId);
+
+    if (!companyIds.length) return { groupId, added: 0 };
+
+    const valid = await this.companyRepo.find({
+      where: { id: In(companyIds), brandId: group.brandId },
+    });
+    if (valid.length !== companyIds.length) {
+      throw new RpcException({ status: 400, message: 'One or more company IDs are invalid' });
+    }
+
+    await this.dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(CompanyGroupMember)
+      .values(companyIds.map((companyId) => ({ groupId, companyId })))
+      .orIgnore()
+      .execute();
+
+    return { groupId, added: companyIds.length };
+  }
+
+  async getGroup(groupId: string, userId: string) {
+    const group = await this.getGroupOrThrow(groupId);
+    await this.checkBrandAccess(group.brandId, userId);
+
+    const members = await this.groupMemberRepo.find({ where: { groupId } });
+    const companies = members.length
+      ? await this.companyRepo.find({ where: { id: In(members.map((m) => m.companyId)) } })
+      : [];
+
+    return {
+      id: group.id,
+      name: group.name,
+      companiesCount: companies.length,
+      companies: companies.map((c) => ({ id: c.id, name: c.name })),
+    };
   }
 
   async createGroup(dto: { brandId: string; userId: string; name: string }) {
@@ -488,8 +565,11 @@ export class CompanyService {
     return result;
   }
 
-  private async getCompanyOrThrow(companyId: string): Promise<Company> {
-    const company = await this.companyRepo.findOne({ where: { id: companyId } });
+  private async getCompanyOrThrow(idOrSlug: string): Promise<Company> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const company = await this.companyRepo.findOne({
+      where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
+    });
 
     if (!company || company.status === CompanyStatus.Deleted) {
       throw new RpcException({ status: 404, message: 'Company not found' });

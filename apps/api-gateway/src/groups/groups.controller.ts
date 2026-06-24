@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
@@ -34,10 +35,23 @@ export class GroupsController {
   list(
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
+    @Query('search') search?: string,
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_LIST, { brandId, userId: user.userId })
+        .send(Patterns.GROUP_LIST, { brandId, userId: user.userId, search })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  @Get('stats')
+  listStats(
+    @CurrentUser() user: { userId: string },
+    @Query('search') search?: string,
+  ) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.GROUP_LIST_STATS, { userId: user.userId, search })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -52,6 +66,29 @@ export class GroupsController {
     return firstValueFrom(
       this.coreClient
         .send(Patterns.GROUP_CREATE, { brandId, userId: user.userId, name: dto.name })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  @Get(':id')
+  get(@Param('id') groupId: string, @CurrentUser() user: { userId: string }) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.GROUP_GET, { groupId, userId: user.userId })
+        .pipe(timeout(RPC_TIMEOUT)),
+    );
+  }
+
+  @Post(':id/companies')
+  @HttpCode(200)
+  addCompanies(
+    @Param('id') groupId: string,
+    @Body() dto: { companyIds: string[] },
+    @CurrentUser() user: { userId: string },
+  ) {
+    return firstValueFrom(
+      this.coreClient
+        .send(Patterns.GROUP_ADD_COMPANIES, { groupId, userId: user.userId, companyIds: dto.companyIds })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }

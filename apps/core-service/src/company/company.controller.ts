@@ -90,8 +90,25 @@ export class CompanyController {
   // ── Groups ────────────────────────────────────────────────────────────────
 
   @MessagePattern(Patterns.GROUP_LIST)
-  listGroups(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
-    return this.companyService.listGroups(brandId, userId);
+  listGroups(@Payload() { brandId, userId, search }: { brandId: string; userId: string; search?: string }) {
+    return this.companyService.listGroups(brandId, userId, search);
+  }
+
+  @MessagePattern(Patterns.GROUP_LIST_STATS)
+  listGroupsStats(@Payload() { userId, search }: { userId: string; search?: string }) {
+    return this.companyService.listGroupsStats(userId, search);
+  }
+
+  @MessagePattern(Patterns.GROUP_ADD_COMPANIES)
+  addCompaniesToGroup(
+    @Payload() { groupId, userId, companyIds }: { groupId: string; userId: string; companyIds: string[] },
+  ) {
+    return this.companyService.addCompaniesToGroup(groupId, userId, companyIds);
+  }
+
+  @MessagePattern(Patterns.GROUP_GET)
+  getGroup(@Payload() { groupId, userId }: { groupId: string; userId: string }) {
+    return this.companyService.getGroup(groupId, userId);
   }
 
   @MessagePattern(Patterns.GROUP_CREATE)
