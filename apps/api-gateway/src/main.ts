@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import { join } from 'path';
@@ -112,6 +113,11 @@ async function bootstrap() {
   // порядок важен: RpcExceptionFilter перед HttpExceptionFilter (более специфичный первый)
   app.useGlobalFilters(new HttpExceptionFilter(), new RpcExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // Wait for RabbitMQ connection before accepting traffic so the first login
+  // request doesn't hit a timeout while the broker is still connecting.
+  const coreClient = app.get<ClientProxy>('CORE_SERVICE');
+  await coreClient.connect();
 
   const port = Number(configService.get('API_GATEWAY_PORT') ?? 3000);
   await app.listen(port);
