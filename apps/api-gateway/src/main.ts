@@ -41,6 +41,7 @@ async function bootstrap() {
 
   app.use((err, req, res, next) => {
     console.error('GLOBAL ERROR:', err);
+    if ((res as any).headersSent) return;
     next(err);
   });
 
@@ -81,14 +82,25 @@ async function bootstrap() {
         'dev-secret-change-in-prod',
       resave: false,
       saveUninitialized: false,
+      rolling: true,
       cookie: {
         httpOnly: true,
         secure: 'auto',
-        sameSite: 'none',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       },
     }),
   );
+
+  // SameSite=None is required for cross-origin HTTPS (production); on HTTP (localhost) use Lax
+  // because browsers reject SameSite=None without Secure.
+  app.use((req: any, _res: any, next: any) => {
+    if (req.session?.cookie) {
+      const isSecure = !!(req.secure || req.headers['x-forwarded-proto'] === 'https');
+      req.session.cookie.sameSite = isSecure ? 'none' : 'lax';
+    }
+    next();
+  });
 
   // ── Global pipes, filters & interceptors ────────────────────────────────
   app.useGlobalPipes(
