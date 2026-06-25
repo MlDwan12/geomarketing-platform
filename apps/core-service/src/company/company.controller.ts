@@ -19,8 +19,8 @@ export class CompanyController {
   }
 
   @MessagePattern(Patterns.COMPANY_GET)
-  get(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
-    return this.companyService.get(companyId, userId);
+  get(@Payload() { companyId, brandId, userId }: { companyId: string; brandId: string; userId: string }) {
+    return this.companyService.get(companyId, userId, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_CREATE)
@@ -47,13 +47,13 @@ export class CompanyController {
   }
 
   @MessagePattern(Patterns.COMPANY_DELETE)
-  delete(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
-    return this.companyService.delete(companyId, userId);
+  delete(@Payload() { companyId, brandId, userId }: { companyId: string; brandId: string; userId: string }) {
+    return this.companyService.delete(companyId, userId, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_PLATFORMS_GET)
-  getPlatforms(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
-    return this.companyService.getPlatforms(companyId, userId);
+  getPlatforms(@Payload() { companyId, brandId, userId }: { companyId: string; brandId: string; userId: string }) {
+    return this.companyService.getPlatforms(companyId, userId, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_DEFAULT_UPDATE)
@@ -61,13 +61,14 @@ export class CompanyController {
     @Payload()
     dto: {
       companyId: string;
+      brandId: string;
       userId: string;
       templateId?: string | null;
       fields?: FieldOverrides;
     },
   ) {
-    const { companyId, userId, ...rest } = dto;
-    return this.companyService.updateDefault(companyId, userId, rest);
+    const { companyId, brandId, userId, ...rest } = dto;
+    return this.companyService.updateDefault(companyId, userId, rest, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_PLATFORM_UPDATE)
@@ -75,6 +76,7 @@ export class CompanyController {
     @Payload()
     dto: {
       companyId: string;
+      brandId: string;
       userId: string;
       platformKey: string;
       isEnabled?: boolean;
@@ -83,8 +85,8 @@ export class CompanyController {
       status?: PlatformStatus;
     },
   ) {
-    const { companyId, userId, platformKey, ...rest } = dto;
-    return this.companyService.updatePlatform(companyId, userId, platformKey, rest);
+    const { companyId, brandId, userId, platformKey, ...rest } = dto;
+    return this.companyService.updatePlatform(companyId, userId, platformKey, rest, brandId);
   }
 
   // ── Groups ────────────────────────────────────────────────────────────────
@@ -95,27 +97,27 @@ export class CompanyController {
   }
 
   @MessagePattern(Patterns.GROUP_LIST_STATS)
-  listGroupsStats(@Payload() { userId, search }: { userId: string; search?: string }) {
-    return this.companyService.listGroupsStats(userId, search);
+  listGroupsStats(@Payload() { brandId, userId, search }: { brandId: string; userId: string; search?: string }) {
+    return this.companyService.listGroupsStats(userId, brandId, search);
   }
 
   @MessagePattern(Patterns.GROUP_REMOVE_COMPANIES)
   removeCompaniesFromGroup(
-    @Payload() { groupId, userId, companyIds }: { groupId: string; userId: string; companyIds: string[] },
+    @Payload() { groupId, brandId, userId, companyIds }: { groupId: string; brandId: string; userId: string; companyIds: string[] },
   ) {
-    return this.companyService.removeCompaniesFromGroup(groupId, userId, companyIds);
+    return this.companyService.removeCompaniesFromGroup(groupId, userId, companyIds, brandId);
   }
 
   @MessagePattern(Patterns.GROUP_ADD_COMPANIES)
   addCompaniesToGroup(
-    @Payload() { groupId, userId, companyIds }: { groupId: string; userId: string; companyIds: string[] },
+    @Payload() { groupId, brandId, userId, companyIds }: { groupId: string; brandId: string; userId: string; companyIds: string[] },
   ) {
-    return this.companyService.addCompaniesToGroup(groupId, userId, companyIds);
+    return this.companyService.addCompaniesToGroup(groupId, userId, companyIds, brandId);
   }
 
   @MessagePattern(Patterns.GROUP_GET)
-  getGroup(@Payload() { groupId, userId }: { groupId: string; userId: string }) {
-    return this.companyService.getGroup(groupId, userId);
+  getGroup(@Payload() { groupId, brandId, userId }: { groupId: string; brandId: string; userId: string }) {
+    return this.companyService.getGroup(groupId, userId, brandId);
   }
 
   @MessagePattern(Patterns.GROUP_CREATE)
@@ -124,25 +126,25 @@ export class CompanyController {
   }
 
   @MessagePattern(Patterns.GROUP_UPDATE)
-  updateGroup(@Payload() { groupId, userId, name }: { groupId: string; userId: string; name: string }) {
-    return this.companyService.updateGroup(groupId, userId, name);
+  updateGroup(@Payload() { groupId, brandId, userId, name }: { groupId: string; brandId: string; userId: string; name: string }) {
+    return this.companyService.updateGroup(groupId, userId, name, brandId);
   }
 
   @MessagePattern(Patterns.GROUP_DELETE)
-  deleteGroup(@Payload() { groupId, userId }: { groupId: string; userId: string }) {
-    return this.companyService.deleteGroup(groupId, userId);
+  deleteGroup(@Payload() { groupId, brandId, userId }: { groupId: string; brandId: string; userId: string }) {
+    return this.companyService.deleteGroup(groupId, userId, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_MAIN_DATA_GET)
-  getMainData(@Payload() { companyId, userId }: { companyId: string; userId: string }) {
-    return this.companyService.getMainData(companyId, userId);
+  getMainData(@Payload() { companyId, brandId, userId }: { companyId: string; brandId: string; userId: string }) {
+    return this.companyService.getMainData(companyId, userId, brandId);
   }
 
   @MessagePattern(Patterns.COMPANY_GROUPS_UPDATE)
   updateCompanyGroups(
-    @Payload() { companyId, userId, groupIds }: { companyId: string; userId: string; groupIds: string[] },
+    @Payload() { companyId, brandId, userId, groupIds }: { companyId: string; brandId: string; userId: string; groupIds: string[] },
   ) {
-    return this.companyService.updateCompanyGroups(companyId, userId, groupIds);
+    return this.companyService.updateCompanyGroups(companyId, userId, groupIds, brandId);
   }
 
   // ── Templates ─────────────────────────────────────────────────────────────
@@ -153,13 +155,13 @@ export class CompanyController {
   }
 
   @MessagePattern(Patterns.TEMPLATE_LIST_STATS)
-  listTemplatesStats(@Payload() { userId }: { userId: string }) {
-    return this.companyService.listTemplatesStats(userId);
+  listTemplatesStats(@Payload() { brandId, userId }: { brandId: string; userId: string }) {
+    return this.companyService.listTemplatesStats(userId, brandId);
   }
 
   @MessagePattern(Patterns.TEMPLATE_GET)
-  getTemplate(@Payload() { templateId, userId }: { templateId: string; userId: string }) {
-    return this.companyService.getTemplate(templateId, userId);
+  getTemplate(@Payload() { templateId, brandId, userId }: { templateId: string; brandId: string; userId: string }) {
+    return this.companyService.getTemplate(templateId, userId, brandId);
   }
 
   @MessagePattern(Patterns.TEMPLATE_CREATE)
@@ -173,14 +175,14 @@ export class CompanyController {
   @MessagePattern(Patterns.TEMPLATE_UPDATE)
   updateTemplate(
     @Payload()
-    dto: { templateId: string; userId: string; name?: string; fields?: Record<string, unknown> },
+    dto: { templateId: string; brandId: string; userId: string; name?: string; fields?: Record<string, unknown> },
   ) {
-    const { templateId, userId, ...rest } = dto;
-    return this.companyService.updateTemplate(templateId, userId, rest);
+    const { templateId, brandId, userId, ...rest } = dto;
+    return this.companyService.updateTemplate(templateId, userId, rest, brandId);
   }
 
   @MessagePattern(Patterns.TEMPLATE_DELETE)
-  deleteTemplate(@Payload() { templateId, userId }: { templateId: string; userId: string }) {
-    return this.companyService.deleteTemplate(templateId, userId);
+  deleteTemplate(@Payload() { templateId, brandId, userId }: { templateId: string; brandId: string; userId: string }) {
+    return this.companyService.deleteTemplate(templateId, userId, brandId);
   }
 }

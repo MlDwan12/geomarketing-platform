@@ -87,41 +87,51 @@ export class CompaniesController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+  get(
+    @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_GET, { companyId: id, userId: user.userId })
+        .send(Patterns.COMPANY_GET, { companyId: id, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+  delete(
+    @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_DELETE, { companyId: id, userId: user.userId })
+        .send(Patterns.COMPANY_DELETE, { companyId: id, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   // GET /companies/:id/platforms — full connection data (orgId, connectedAt, syncError, ...)
   @Get(':id/platforms')
-  getPlatforms(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+  getPlatforms(
+    @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_PLATFORMS_GET, { companyId: id, userId: user.userId })
+        .send(Patterns.COMPANY_PLATFORMS_GET, { companyId: id, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   // PATCH /companies/:id/default
-  // Body: { templateId?, fields? }
-  // fields: { fieldName: { isException, value?, platforms? } }
-  // Merge at field level — untouched fields stay as-is
   @Patch(':id/default')
   updateDefault(
     @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { templateId?: string | null; fields?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
@@ -129,6 +139,7 @@ export class CompaniesController {
       this.coreClient
         .send(Patterns.COMPANY_DEFAULT_UPDATE, {
           companyId: id,
+          brandId,
           userId: user.userId,
           ...dto,
         })
@@ -141,6 +152,7 @@ export class CompaniesController {
   @Patch(':id/groups')
   updateGroups(
     @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { groupIds: string[] },
     @CurrentUser() user: { userId: string },
   ) {
@@ -148,6 +160,7 @@ export class CompaniesController {
       this.coreClient
         .send(Patterns.COMPANY_GROUPS_UPDATE, {
           companyId: id,
+          brandId,
           userId: user.userId,
           groupIds: dto.groupIds,
         })
@@ -157,10 +170,14 @@ export class CompaniesController {
 
   // GET /companies/:slug/main_data
   @Get(':slug/main_data')
-  getMainData(@Param('slug') slug: string, @CurrentUser() user: { userId: string }) {
+  getMainData(
+    @Param('slug') slug: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.COMPANY_MAIN_DATA_GET, { companyId: slug, userId: user.userId })
+        .send(Patterns.COMPANY_MAIN_DATA_GET, { companyId: slug, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -171,6 +188,7 @@ export class CompaniesController {
   updatePlatform(
     @Param('id') id: string,
     @Param('platformKey') platformKey: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { isEnabled?: boolean; orgId?: string | null; orgName?: string | null },
     @CurrentUser() user: { userId: string },
   ) {
@@ -178,6 +196,7 @@ export class CompaniesController {
       this.coreClient
         .send(Patterns.COMPANY_PLATFORM_UPDATE, {
           companyId: id,
+          brandId,
           userId: user.userId,
           platformKey,
           ...dto,

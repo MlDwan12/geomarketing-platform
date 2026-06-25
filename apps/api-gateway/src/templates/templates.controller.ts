@@ -43,22 +43,29 @@ export class TemplatesController {
     );
   }
 
-  // GET /templates/stats — все шаблоны по всем брендам с кол. компаний
+  // GET /templates/stats — все шаблоны текущего бренда с кол. компаний
   @Get('stats')
-  listStats(@CurrentUser() user: { userId: string }) {
+  listStats(
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.TEMPLATE_LIST_STATS, { userId: user.userId })
+        .send(Patterns.TEMPLATE_LIST_STATS, { brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   // GET /templates/:id — шаблон с полями и списком компаний
   @Get(':id')
-  get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+  get(
+    @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.TEMPLATE_GET, { templateId: id, userId: user.userId })
+        .send(Patterns.TEMPLATE_GET, { templateId: id, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -85,12 +92,13 @@ export class TemplatesController {
   @Patch(':id')
   update(
     @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { name?: string; fields?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.TEMPLATE_UPDATE, { templateId: id, userId: user.userId, ...dto })
+        .send(Patterns.TEMPLATE_UPDATE, { templateId: id, brandId, userId: user.userId, ...dto })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -98,10 +106,14 @@ export class TemplatesController {
   // DELETE /templates/:id
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+  delete(
+    @Param('id') id: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.TEMPLATE_DELETE, { templateId: id, userId: user.userId })
+        .send(Patterns.TEMPLATE_DELETE, { templateId: id, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }

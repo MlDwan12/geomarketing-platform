@@ -61,9 +61,10 @@ export class CompanyService {
 
   // ── Get ──────────────────────────────────────────────────────────────────
 
-  async get(companyId: string, userId: string) {
+  async get(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     const [def, platforms, groupMembers] = await Promise.all([
       this.defaultRepo.findOne({ where: { companyId: company.id } }),
@@ -182,9 +183,10 @@ export class CompanyService {
 
   // ── Delete ───────────────────────────────────────────────────────────────
 
-  async delete(companyId: string, userId: string) {
+  async delete(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     company.status = CompanyStatus.Deleted;
     await this.companyRepo.save(company);
@@ -193,8 +195,8 @@ export class CompanyService {
 
   // ── Main data (form endpoint) ─────────────────────────────────────────────
 
-  async getMainData(companyIdOrSlug: string, userId: string) {
-    const full = (await this.get(companyIdOrSlug, userId)) as Record<string, unknown> & {
+  async getMainData(companyIdOrSlug: string, userId: string, brandId: string) {
+    const full = (await this.get(companyIdOrSlug, userId, brandId)) as Record<string, unknown> & {
       card: { templateId: string | null; fields: Record<string, unknown> };
     };
     return {
@@ -219,9 +221,11 @@ export class CompanyService {
       templateId?: string | null;
       fields?: FieldOverrides;
     },
+    brandId: string,
   ) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     let def = await this.defaultRepo.findOne({ where: { companyId } });
 
@@ -262,9 +266,11 @@ export class CompanyService {
       orgName?: string | null;
       status?: PlatformStatus;
     },
+    brandId: string,
   ) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     let platform = await this.platformRepo.findOne({ where: { companyId, platformKey } });
 
@@ -300,20 +306,18 @@ export class CompanyService {
     return templates.map((t) => ({ id: t.id, name: t.name }));
   }
 
-  async listTemplatesStats(userId: string) {
-    const userBrands = await this.userBrandRepo.find({ where: { userId } });
-    if (!userBrands.length) return [];
+  async listTemplatesStats(userId: string, brandId: string) {
+    await this.checkBrandAccess(brandId, userId);
 
-    const brandIds = userBrands.map((b) => b.brandId);
     const rows: { id: string; name: string; brandId: string; companiesCount: string }[] =
       await this.dataSource.query(
         `SELECT t.id, t.name, t."brandId", COUNT(d."companyId")::int AS "companiesCount"
          FROM company_templates t
          LEFT JOIN company_defaults d ON d."templateId" = t.id
-         WHERE t."brandId" = ANY($1)
+         WHERE t."brandId" = $1
          GROUP BY t.id
          ORDER BY t."createdAt" ASC`,
-        [brandIds],
+        [brandId],
       );
 
     return rows.map((r) => ({
@@ -324,10 +328,10 @@ export class CompanyService {
     }));
   }
 
-  async getTemplate(templateId: string, userId: string) {
+  async getTemplate(templateId: string, userId: string, brandId: string) {
     const template = await this.templateRepo.findOne({ where: { id: templateId } });
-    if (!template) throw new RpcException({ status: 404, message: 'Template not found' });
-    await this.checkBrandAccess(template.brandId, userId);
+    if (!template || template.brandId !== brandId) throw new RpcException({ status: 404, message: 'Template not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     const defaults = await this.defaultRepo.find({ where: { templateId } });
     const companies = defaults.length
@@ -363,26 +367,27 @@ export class CompanyService {
     templateId: string,
     userId: string,
     dto: { name?: string; fields?: Record<string, unknown> },
+    brandId: string,
   ) {
     const template = await this.templateRepo.findOne({ where: { id: templateId } });
 
-    if (!template) {
+    if (!template || template.brandId !== brandId) {
       throw new RpcException({ status: 404, message: 'Template not found' });
     }
 
-    await this.checkBrandAccess(template.brandId, userId);
+    await this.checkBrandAccess(brandId, userId);
     Object.assign(template, dto);
     return this.templateRepo.save(template);
   }
 
-  async deleteTemplate(templateId: string, userId: string) {
+  async deleteTemplate(templateId: string, userId: string, brandId: string) {
     const template = await this.templateRepo.findOne({ where: { id: templateId } });
 
-    if (!template) {
+    if (!template || template.brandId !== brandId) {
       throw new RpcException({ status: 404, message: 'Template not found' });
     }
 
-    await this.checkBrandAccess(template.brandId, userId);
+    await this.checkBrandAccess(brandId, userId);
 
     // Detach companies before deleting so they don't lose their data
     await this.defaultRepo.update({ templateId }, { templateId: null });
@@ -392,9 +397,10 @@ export class CompanyService {
 
   // ── Get platforms (full connection data) ─────────────────────────────────
 
-  async getPlatforms(companyId: string, userId: string) {
+  async getPlatforms(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
     return this.platformRepo.find({ where: { companyId } });
   }
 
@@ -409,12 +415,10 @@ export class CompanyService {
     return groups.map((g) => ({ id: g.id, name: g.name }));
   }
 
-  async listGroupsStats(userId: string, search?: string) {
-    const userBrands = await this.userBrandRepo.find({ where: { userId } });
-    if (!userBrands.length) return [];
+  async listGroupsStats(userId: string, brandId: string, search?: string) {
+    await this.checkBrandAccess(brandId, userId);
 
-    const brandIds = userBrands.map((b) => b.brandId);
-    const params: unknown[] = [brandIds];
+    const params: unknown[] = [brandId];
     let searchClause = '';
 
     if (search) {
@@ -427,7 +431,7 @@ export class CompanyService {
         `SELECT g.id, g.name, g."brandId", COUNT(m."companyId")::int AS "companiesCount"
          FROM company_groups g
          LEFT JOIN company_group_members m ON m."groupId" = g.id
-         WHERE g."brandId" = ANY($1) ${searchClause}
+         WHERE g."brandId" = $1 ${searchClause}
          GROUP BY g.id
          ORDER BY g."createdAt" ASC`,
         params,
@@ -441,9 +445,10 @@ export class CompanyService {
     }));
   }
 
-  async removeCompaniesFromGroup(groupId: string, userId: string, companyIds: string[]) {
+  async removeCompaniesFromGroup(groupId: string, userId: string, companyIds: string[], brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    await this.checkBrandAccess(group.brandId, userId);
+    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     if (!companyIds.length) return { groupId, removed: 0 };
 
@@ -451,9 +456,10 @@ export class CompanyService {
     return { groupId, removed: companyIds.length };
   }
 
-  async addCompaniesToGroup(groupId: string, userId: string, companyIds: string[]) {
+  async addCompaniesToGroup(groupId: string, userId: string, companyIds: string[], brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    await this.checkBrandAccess(group.brandId, userId);
+    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     if (!companyIds.length) return { groupId, added: 0 };
 
@@ -475,9 +481,10 @@ export class CompanyService {
     return { groupId, added: companyIds.length };
   }
 
-  async getGroup(groupId: string, userId: string) {
+  async getGroup(groupId: string, userId: string, brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    await this.checkBrandAccess(group.brandId, userId);
+    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     const members = await this.groupMemberRepo.find({ where: { groupId } });
     const companies = members.length
@@ -499,23 +506,26 @@ export class CompanyService {
     );
   }
 
-  async updateGroup(groupId: string, userId: string, name: string) {
+  async updateGroup(groupId: string, userId: string, name: string, brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    await this.checkBrandAccess(group.brandId, userId);
+    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    await this.checkBrandAccess(brandId, userId);
     group.name = name;
     return this.groupRepo.save(group);
   }
 
-  async deleteGroup(groupId: string, userId: string) {
+  async deleteGroup(groupId: string, userId: string, brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    await this.checkBrandAccess(group.brandId, userId);
+    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    await this.checkBrandAccess(brandId, userId);
     await this.groupRepo.remove(group);
     return null;
   }
 
-  async updateCompanyGroups(companyId: string, userId: string, groupIds: string[]) {
+  async updateCompanyGroups(companyId: string, userId: string, groupIds: string[], brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.checkBrandAccess(company.brandId, userId);
+    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    await this.checkBrandAccess(brandId, userId);
 
     if (groupIds.length) {
       const validGroups = await this.groupRepo.find({

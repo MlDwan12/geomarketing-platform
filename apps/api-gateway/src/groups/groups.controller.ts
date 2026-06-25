@@ -46,12 +46,13 @@ export class GroupsController {
 
   @Get('stats')
   listStats(
+    @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
     @Query('search') search?: string,
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_LIST_STATS, { userId: user.userId, search })
+        .send(Patterns.GROUP_LIST_STATS, { brandId, userId: user.userId, search })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -71,10 +72,14 @@ export class GroupsController {
   }
 
   @Get(':id')
-  get(@Param('id') groupId: string, @CurrentUser() user: { userId: string }) {
+  get(
+    @Param('id') groupId: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_GET, { groupId, userId: user.userId })
+        .send(Patterns.GROUP_GET, { groupId, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -83,12 +88,13 @@ export class GroupsController {
   @HttpCode(200)
   addCompanies(
     @Param('id') groupId: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { companyIds: string[] },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_ADD_COMPANIES, { groupId, userId: user.userId, companyIds: dto.companyIds })
+        .send(Patterns.GROUP_ADD_COMPANIES, { groupId, brandId, userId: user.userId, companyIds: dto.companyIds })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -97,12 +103,13 @@ export class GroupsController {
   @HttpCode(200)
   removeCompanies(
     @Param('id') groupId: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { companyIds: string[] },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_REMOVE_COMPANIES, { groupId, userId: user.userId, companyIds: dto.companyIds })
+        .send(Patterns.GROUP_REMOVE_COMPANIES, { groupId, brandId, userId: user.userId, companyIds: dto.companyIds })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
@@ -110,22 +117,27 @@ export class GroupsController {
   @Patch(':id')
   update(
     @Param('id') groupId: string,
+    @Headers('x-brand-id') brandId: string,
     @Body() dto: { name: string },
     @CurrentUser() user: { userId: string },
   ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_UPDATE, { groupId, userId: user.userId, name: dto.name })
+        .send(Patterns.GROUP_UPDATE, { groupId, brandId, userId: user.userId, name: dto.name })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id') groupId: string, @CurrentUser() user: { userId: string }) {
+  delete(
+    @Param('id') groupId: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
     return firstValueFrom(
       this.coreClient
-        .send(Patterns.GROUP_DELETE, { groupId, userId: user.userId })
+        .send(Patterns.GROUP_DELETE, { groupId, brandId, userId: user.userId })
         .pipe(timeout(RPC_TIMEOUT)),
     );
   }
