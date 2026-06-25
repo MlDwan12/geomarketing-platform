@@ -41,6 +41,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = msg;
         }
       }
+    } else if (typeof exception === 'object' && exception !== null && ('status' in exception || 'statusCode' in exception)) {
+      // Plain RPC error object from core-service: { status, message }
+      const e = exception as Record<string, unknown>;
+      const rawStatus = (e['status'] ?? e['statusCode']) as number;
+      if (typeof rawStatus === 'number' && rawStatus >= 400 && rawStatus < 600) {
+        status = rawStatus;
+        message = (e['message'] as string) ?? message;
+        code = STATUS_TO_CODE[status] ?? 'INTERNAL_ERROR';
+      }
     }
 
     response.status(status).json({

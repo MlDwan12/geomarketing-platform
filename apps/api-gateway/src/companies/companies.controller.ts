@@ -64,7 +64,7 @@ export class CompaniesController {
     const namesField = rawFields.names as { default: { val: string }[] } | undefined;
     const name = namesField?.default?.[0]?.val;
 
-    const fieldOverrides = buildFieldOverrides(rawFields);
+    const fieldOverrides = buildFieldOverrides(rawFields, !!templateId);
     return firstValueFrom(
       this.coreClient
         .send(Patterns.COMPANY_CREATE, {
@@ -204,10 +204,16 @@ export class CompaniesController {
 
 // Converts frontend field format to internal fieldOverrides storage format.
 // All card fields use { default: value } wrapper — strips it to { value: value }.
-function buildFieldOverrides(fields: Record<string, unknown>): Record<string, { value: unknown }> {
-  const result: Record<string, { value: unknown }> = {};
+function buildFieldOverrides(
+  fields: Record<string, unknown>,
+  hasTemplate: boolean,
+): Record<string, { value: unknown; isException?: true }> {
+  const result: Record<string, { value: unknown; isException?: true }> = {};
   for (const [key, val] of Object.entries(fields)) {
-    result[key] = { value: (val as { default: unknown }).default };
+    result[key] = {
+      value: (val as { default: unknown }).default,
+      ...(hasTemplate ? { isException: true } : {}),
+    };
   }
   return result;
 }
