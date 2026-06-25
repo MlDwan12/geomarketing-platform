@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -63,10 +62,7 @@ export class CompaniesController {
     };
 
     const namesField = rawFields.names as { default: { val: string }[] } | undefined;
-    if (!namesField?.default?.length || !namesField.default[0]?.val) {
-      throw new BadRequestException('names.default[0].val is required');
-    }
-    const name = namesField.default[0].val;
+    const name = namesField?.default?.[0]?.val;
 
     const fieldOverrides = buildFieldOverrides(rawFields);
     return firstValueFrom(

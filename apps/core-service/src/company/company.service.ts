@@ -100,7 +100,7 @@ export class CompanyService {
   async create(dto: {
     brandId: string;
     userId: string;
-    name: string;
+    name?: string;
     status?: CompanyStatus;
     code?: string;
     twoGisOrgId?: string;
@@ -110,13 +110,28 @@ export class CompanyService {
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
 
-    const slug = await this.generateSlug(dto.name);
+    // Name: from fieldOverrides.names override, or from template fields, or error
+    let resolvedName = dto.name;
+    if (!resolvedName) {
+      const namesOverride = dto.fieldOverrides?.['names'] as { value: { val: string }[] } | undefined;
+      resolvedName = namesOverride?.value?.[0]?.val;
+    }
+    if (!resolvedName && dto.templateId) {
+      const template = await this.templateRepo.findOne({ where: { id: dto.templateId } });
+      const namesField = template?.fields?.['names'] as { default: { val: string }[] } | undefined;
+      resolvedName = namesField?.default?.[0]?.val;
+    }
+    if (!resolvedName) {
+      throw new RpcException({ status: 400, message: 'Company name is required' });
+    }
+
+    const slug = await this.generateSlug(resolvedName);
 
     return this.dataSource.transaction(async (em) => {
       const company = await em.save(
         em.create(Company, {
           brandId: dto.brandId,
-          name: dto.name,
+          name: resolvedName,
           slug,
           status: dto.status ?? CompanyStatus.Draft,
           code: dto.code ?? null,

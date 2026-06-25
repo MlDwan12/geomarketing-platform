@@ -29,7 +29,7 @@ export class CompanyController {
     dto: {
       brandId: string;
       userId: string;
-      name: string;
+      name?: string;
       status?: CompanyStatus;
       code?: string;
       twoGisOrgId?: string;
