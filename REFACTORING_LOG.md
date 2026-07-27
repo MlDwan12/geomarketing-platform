@@ -220,6 +220,34 @@ user_brands(userId,brandId) — UNIQUE).
 
 ---
 
+## Этап 4 — декомпозиция CompanyService (ARCH-001), подход «фасад»
+Статус: **в работе** (4.1, 4.2 завершены и проверены; 4.3–4.5 — следующие)
+
+Принцип: `CompanyService` сохраняет все публичные методы и сигнатуры → core-контроллер
+и RMQ-паттерны не меняются (нулевой риск для контрактов). Логика выносится в модули/сервисы,
+методы-обёртки сохраняют совместимость с характеризационными тестами Этапа 0.
+
+### 4.1 — извлечение чистой логики
+Статус: завершён
+- Новые: `company/card-fields.ts` (`assembleCardFields`, `resolveForPlatform`, `mergeLangArrays`,
+  `LANG_MERGE_FIELDS`), `company/slug.util.ts` (`slugify`) — точные копии, поведение идентично.
+- `company.service.ts`: методы делегируют в эти функции; `mergeLangArrays` удалён из сервиса.
+- Проверки: tsc 0, тесты 23/23 (Этап 0 без изменений), build core-service success.
+
+### 4.2 — общий CompanyAccessService
+Статус: завершён
+- Новый `company/company-access.service.ts`: `assertBrandAccess`, `getCompanyOrThrow`.
+- `company.service.ts`: `checkBrandAccess`/`getCompanyOrThrow` делегируют в access;
+  убраны инъекция `userBrandRepo` и импорт `UserBrand` (теперь только в access).
+- `company.module.ts`: `CompanyAccessService` добавлен в providers.
+- Проверки: tsc 0, тесты 23/23, build success. Публичные методы и поведение не изменились.
+
+### 4.3–4.5 — под-сервисы (СЛЕДУЮЩЕЕ)
+- `CompanyTemplateService`, `CompanyGroupService`, `CompanyPlatformService`;
+  `CompanyService` делегирует соответствующие методы (фасад).
+
+---
+
 ## NEW-001 / NEW-002 — фикс CLI-миграций (data-source.ts)
 Статус: **завершён и проверен** (отдельный коммит, вне Этапа 3)
 

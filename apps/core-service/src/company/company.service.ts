@@ -4,20 +4,19 @@ import { DataSource, ILike, In, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from './company.entity';
-import { CompanyDefault, FieldOverride, FieldOverrides } from './company-default.entity';
+import { CompanyDefault, FieldOverrides } from './company-default.entity';
 import { CompanyTemplate } from './company-template.entity';
 import { CompanyPlatform, PlatformStatus } from './company-platform.entity';
 import { CompanyGroup } from './company-group.entity';
 import { CompanyGroupMember } from './company-group-member.entity';
-import { UserBrand } from '../brand/user-brand.entity';
+import {
+  assembleCardFields as assembleCardFieldsFn,
+  resolveForPlatform as resolveForPlatformFn,
+} from './card-fields';
+import { slugify as slugifyFn } from './slug.util';
+import { CompanyAccessService } from './company-access.service';
 
 const DEFAULT_PLATFORM_KEYS = ['yandex', 'twogis'];
-
-const LANG_MERGE_FIELDS = new Set([
-  'names', 'shortNames', 'altNames', 'descriptions', 'shortDescriptions',
-]);
-
-type LangItem = { lang: string; val: string };
 
 @Injectable()
 export class CompanyService {
@@ -34,9 +33,8 @@ export class CompanyService {
     private readonly groupRepo: Repository<CompanyGroup>,
     @InjectRepository(CompanyGroupMember)
     private readonly groupMemberRepo: Repository<CompanyGroupMember>,
-    @InjectRepository(UserBrand)
-    private readonly userBrandRepo: Repository<UserBrand>,
     private readonly dataSource: DataSource,
+    private readonly access: CompanyAccessService,
   ) {}
 
   // ── List ─────────────────────────────────────────────────────────────────
@@ -63,7 +61,8 @@ export class CompanyService {
 
   async get(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
 
     const [def, platforms, groupMembers] = await Promise.all([
@@ -77,7 +76,9 @@ export class CompanyService {
       : null;
 
     const groups = groupMembers.length
-      ? await this.groupRepo.find({ where: { id: In(groupMembers.map((m) => m.groupId)) } })
+      ? await this.groupRepo.find({
+          where: { id: In(groupMembers.map((m) => m.groupId)) },
+        })
       : [];
 
     return {
@@ -113,16 +114,25 @@ export class CompanyService {
     // Name: from fieldOverrides.names override, or from template fields, or error
     let resolvedName = dto.name;
     if (!resolvedName) {
-      const namesOverride = dto.fieldOverrides?.['names'] as { value: { val: string }[] } | undefined;
+      const namesOverride = dto.fieldOverrides?.['names'] as
+        | { value: { val: string }[] }
+        | undefined;
       resolvedName = namesOverride?.value?.[0]?.val;
     }
     if (!resolvedName && dto.templateId) {
-      const template = await this.templateRepo.findOne({ where: { id: dto.templateId } });
-      const namesField = template?.fields?.['names'] as { default: { val: string }[] } | undefined;
+      const template = await this.templateRepo.findOne({
+        where: { id: dto.templateId },
+      });
+      const namesField = template?.fields?.['names'] as
+        | { default: { val: string }[] }
+        | undefined;
       resolvedName = namesField?.default?.[0]?.val;
     }
     if (!resolvedName) {
-      throw new RpcException({ status: 400, message: 'Company name is required' });
+      throw new RpcException({
+        status: 400,
+        message: 'Company name is required',
+      });
     }
 
     const slug = await this.generateSlug(resolvedName);
@@ -162,7 +172,8 @@ export class CompanyService {
             isEnabled: platformKey === 'twogis' && !!dto.twoGisOrgId,
             orgId: platformKey === 'twogis' ? (dto.twoGisOrgId ?? null) : null,
             orgName: null,
-            connectedAt: platformKey === 'twogis' && dto.twoGisOrgId ? now : null,
+            connectedAt:
+              platformKey === 'twogis' && dto.twoGisOrgId ? now : null,
             lastSyncAt: null,
             syncError: null,
           }),
@@ -200,7 +211,8 @@ export class CompanyService {
 
   async delete(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
 
     company.status = CompanyStatus.Deleted;
@@ -211,7 +223,10 @@ export class CompanyService {
   // ── Main data (form endpoint) ─────────────────────────────────────────────
 
   async getMainData(companyIdOrSlug: string, userId: string, brandId: string) {
-    const full = (await this.get(companyIdOrSlug, userId, brandId)) as Record<string, unknown> & {
+    const full = (await this.get(companyIdOrSlug, userId, brandId)) as Record<
+      string,
+      unknown
+    > & {
       card: { templateId: string | null; fields: Record<string, unknown> };
     };
     return {
@@ -239,13 +254,18 @@ export class CompanyService {
     brandId: string,
   ) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
 
     let def = await this.defaultRepo.findOne({ where: { companyId } });
 
     if (!def) {
-      def = this.defaultRepo.create({ companyId, templateId: null, fieldOverrides: {} });
+      def = this.defaultRepo.create({
+        companyId,
+        templateId: null,
+        fieldOverrides: {},
+      });
     }
 
     if (dto.templateId !== undefined) {
@@ -284,10 +304,13 @@ export class CompanyService {
     brandId: string,
   ) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
 
-    let platform = await this.platformRepo.findOne({ where: { companyId, platformKey } });
+    let platform = await this.platformRepo.findOne({
+      where: { companyId, platformKey },
+    });
 
     if (!platform) {
       platform = this.platformRepo.create({
@@ -317,23 +340,30 @@ export class CompanyService {
 
   async listTemplates(brandId: string, userId: string) {
     await this.checkBrandAccess(brandId, userId);
-    const templates = await this.templateRepo.find({ where: { brandId }, order: { createdAt: 'ASC' } });
+    const templates = await this.templateRepo.find({
+      where: { brandId },
+      order: { createdAt: 'ASC' },
+    });
     return templates.map((t) => ({ id: t.id, name: t.name }));
   }
 
   async listTemplatesStats(userId: string, brandId: string) {
     await this.checkBrandAccess(brandId, userId);
 
-    const rows: { id: string; name: string; brandId: string; companiesCount: string }[] =
-      await this.dataSource.query(
-        `SELECT t.id, t.name, t."brandId", COUNT(d."companyId")::int AS "companiesCount"
+    const rows: {
+      id: string;
+      name: string;
+      brandId: string;
+      companiesCount: string;
+    }[] = await this.dataSource.query(
+      `SELECT t.id, t.name, t."brandId", COUNT(d."companyId")::int AS "companiesCount"
          FROM company_templates t
          LEFT JOIN company_defaults d ON d."templateId" = t.id
          WHERE t."brandId" = $1
          GROUP BY t.id
          ORDER BY t."createdAt" ASC`,
-        [brandId],
-      );
+      [brandId],
+    );
 
     return rows.map((r) => ({
       id: r.id,
@@ -344,13 +374,18 @@ export class CompanyService {
   }
 
   async getTemplate(templateId: string, userId: string, brandId: string) {
-    const template = await this.templateRepo.findOne({ where: { id: templateId } });
-    if (!template || template.brandId !== brandId) throw new RpcException({ status: 404, message: 'Template not found' });
+    const template = await this.templateRepo.findOne({
+      where: { id: templateId },
+    });
+    if (!template || template.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Template not found' });
     await this.checkBrandAccess(brandId, userId);
 
     const defaults = await this.defaultRepo.find({ where: { templateId } });
     const companies = defaults.length
-      ? await this.companyRepo.find({ where: { id: In(defaults.map((d) => d.companyId)) } })
+      ? await this.companyRepo.find({
+          where: { id: In(defaults.map((d) => d.companyId)) },
+        })
       : [];
 
     return {
@@ -358,7 +393,11 @@ export class CompanyService {
       name: template.name,
       fields: template.fields,
       companiesCount: companies.length,
-      companies: companies.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+      companies: companies.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+      })),
     };
   }
 
@@ -384,7 +423,9 @@ export class CompanyService {
     dto: { name?: string; fields?: Record<string, unknown> },
     brandId: string,
   ) {
-    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+    const template = await this.templateRepo.findOne({
+      where: { id: templateId },
+    });
 
     if (!template || template.brandId !== brandId) {
       throw new RpcException({ status: 404, message: 'Template not found' });
@@ -396,7 +437,9 @@ export class CompanyService {
   }
 
   async deleteTemplate(templateId: string, userId: string, brandId: string) {
-    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+    const template = await this.templateRepo.findOne({
+      where: { id: templateId },
+    });
 
     if (!template || template.brandId !== brandId) {
       throw new RpcException({ status: 404, message: 'Template not found' });
@@ -414,7 +457,8 @@ export class CompanyService {
 
   async getPlatforms(companyId: string, userId: string, brandId: string) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
     return this.platformRepo.find({ where: { companyId } });
   }
@@ -441,16 +485,20 @@ export class CompanyService {
       searchClause = `AND g.name ILIKE $${params.length}`;
     }
 
-    const rows: { id: string; name: string; brandId: string; companiesCount: string }[] =
-      await this.dataSource.query(
-        `SELECT g.id, g.name, g."brandId", COUNT(m."companyId")::int AS "companiesCount"
+    const rows: {
+      id: string;
+      name: string;
+      brandId: string;
+      companiesCount: string;
+    }[] = await this.dataSource.query(
+      `SELECT g.id, g.name, g."brandId", COUNT(m."companyId")::int AS "companiesCount"
          FROM company_groups g
          LEFT JOIN company_group_members m ON m."groupId" = g.id
          WHERE g."brandId" = $1 ${searchClause}
          GROUP BY g.id
          ORDER BY g."createdAt" ASC`,
-        params,
-      );
+      params,
+    );
 
     return rows.map((r) => ({
       id: r.id,
@@ -460,9 +508,15 @@ export class CompanyService {
     }));
   }
 
-  async removeCompaniesFromGroup(groupId: string, userId: string, companyIds: string[], brandId: string) {
+  async removeCompaniesFromGroup(
+    groupId: string,
+    userId: string,
+    companyIds: string[],
+    brandId: string,
+  ) {
     const group = await this.getGroupOrThrow(groupId);
-    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (group.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     await this.checkBrandAccess(brandId, userId);
 
     if (!companyIds.length) return { groupId, removed: 0 };
@@ -471,9 +525,15 @@ export class CompanyService {
     return { groupId, removed: companyIds.length };
   }
 
-  async addCompaniesToGroup(groupId: string, userId: string, companyIds: string[], brandId: string) {
+  async addCompaniesToGroup(
+    groupId: string,
+    userId: string,
+    companyIds: string[],
+    brandId: string,
+  ) {
     const group = await this.getGroupOrThrow(groupId);
-    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (group.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     await this.checkBrandAccess(brandId, userId);
 
     if (!companyIds.length) return { groupId, added: 0 };
@@ -482,7 +542,10 @@ export class CompanyService {
       where: { id: In(companyIds), brandId: group.brandId },
     });
     if (valid.length !== companyIds.length) {
-      throw new RpcException({ status: 400, message: 'One or more company IDs are invalid' });
+      throw new RpcException({
+        status: 400,
+        message: 'One or more company IDs are invalid',
+      });
     }
 
     await this.dataSource
@@ -498,12 +561,15 @@ export class CompanyService {
 
   async getGroup(groupId: string, userId: string, brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (group.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     await this.checkBrandAccess(brandId, userId);
 
     const members = await this.groupMemberRepo.find({ where: { groupId } });
     const companies = members.length
-      ? await this.companyRepo.find({ where: { id: In(members.map((m) => m.companyId)) } })
+      ? await this.companyRepo.find({
+          where: { id: In(members.map((m) => m.companyId)) },
+        })
       : [];
 
     return {
@@ -521,9 +587,15 @@ export class CompanyService {
     );
   }
 
-  async updateGroup(groupId: string, userId: string, name: string, brandId: string) {
+  async updateGroup(
+    groupId: string,
+    userId: string,
+    name: string,
+    brandId: string,
+  ) {
     const group = await this.getGroupOrThrow(groupId);
-    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (group.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     await this.checkBrandAccess(brandId, userId);
     group.name = name;
     return this.groupRepo.save(group);
@@ -531,15 +603,22 @@ export class CompanyService {
 
   async deleteGroup(groupId: string, userId: string, brandId: string) {
     const group = await this.getGroupOrThrow(groupId);
-    if (group.brandId !== brandId) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (group.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     await this.checkBrandAccess(brandId, userId);
     await this.groupRepo.remove(group);
     return null;
   }
 
-  async updateCompanyGroups(companyId: string, userId: string, groupIds: string[], brandId: string) {
+  async updateCompanyGroups(
+    companyId: string,
+    userId: string,
+    groupIds: string[],
+    brandId: string,
+  ) {
     const company = await this.getCompanyOrThrow(companyId);
-    if (company.brandId !== brandId) throw new RpcException({ status: 404, message: 'Company not found' });
+    if (company.brandId !== brandId)
+      throw new RpcException({ status: 404, message: 'Company not found' });
     await this.checkBrandAccess(brandId, userId);
 
     if (groupIds.length) {
@@ -547,7 +626,10 @@ export class CompanyService {
         where: { id: In(groupIds), brandId: company.brandId },
       });
       if (validGroups.length !== groupIds.length) {
-        throw new RpcException({ status: 400, message: 'One or more group IDs are invalid' });
+        throw new RpcException({
+          status: 400,
+          message: 'One or more group IDs are invalid',
+        });
       }
     }
 
@@ -555,7 +637,9 @@ export class CompanyService {
       await em.delete(CompanyGroupMember, { companyId });
       if (groupIds.length) {
         await em.save(
-          groupIds.map((groupId) => em.create(CompanyGroupMember, { groupId, companyId })),
+          groupIds.map((groupId) =>
+            em.create(CompanyGroupMember, { groupId, companyId }),
+          ),
         );
       }
       return { companyId, groupIds };
@@ -564,13 +648,17 @@ export class CompanyService {
 
   // ── findByTwoGisOrgId (used by integration service) ──────────────────────
 
-  async findByTwoGisOrgId(orgId: string): Promise<{ id: string; brandId: string } | null> {
+  async findByTwoGisOrgId(
+    orgId: string,
+  ): Promise<{ id: string; brandId: string } | null> {
     const platform = await this.platformRepo.findOne({
       where: { platformKey: 'twogis', orgId },
     });
     if (!platform) return null;
 
-    const company = await this.companyRepo.findOne({ where: { id: platform.companyId } });
+    const company = await this.companyRepo.findOne({
+      where: { id: platform.companyId },
+    });
     if (!company) return null;
 
     return { id: company.id, brandId: company.brandId };
@@ -585,114 +673,32 @@ export class CompanyService {
     templateFields: Record<string, unknown>,
     overrides: FieldOverrides,
   ): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-    const allKeys = new Set([...Object.keys(templateFields), ...Object.keys(overrides)]);
-
-    for (const key of allKeys) {
-      const override = overrides[key] as FieldOverride | undefined;
-      const templateValue = templateFields[key];
-
-      // Base value priority: company value (no template) → exception override → template
-      let baseValue: unknown;
-      if (override?.value !== undefined && override?.isException !== false) {
-        baseValue = override.value;
-      } else if (templateValue !== undefined) {
-        baseValue = templateValue;
-      }
-
-      const platformOverride = override?.platforms?.[platformKey];
-
-      if (platformOverride !== undefined) {
-        // Multilingual fields: merge by lang key, not full replacement
-        if (LANG_MERGE_FIELDS.has(key) && Array.isArray(baseValue) && Array.isArray(platformOverride)) {
-          result[key] = this.mergeLangArrays(baseValue as LangItem[], platformOverride as LangItem[]);
-        } else {
-          result[key] = platformOverride;
-        }
-      } else if (baseValue !== undefined) {
-        result[key] = baseValue;
-      }
-    }
-
-    return result;
+    return resolveForPlatformFn(platformKey, templateFields, overrides);
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  // Builds the per-field response.
-  // No template:   { value, platforms }
-  // With template: { isException, default, platforms }
+  // Builds the per-field response (см. card-fields.ts).
   private assembleCardFields(
     def: CompanyDefault | null,
     template: CompanyTemplate | null,
   ): Record<string, unknown> {
-    const overrides = (def?.fieldOverrides ?? {}) as FieldOverrides;
-    const templateFields = (template?.fields ?? {}) as Record<string, unknown>;
-    const allKeys = new Set([...Object.keys(templateFields), ...Object.keys(overrides)]);
-    const result: Record<string, unknown> = {};
-
-    for (const key of allKeys) {
-      const override = overrides[key] as FieldOverride | undefined;
-      const field: Record<string, unknown> = {};
-
-      const isInTemplate = template !== null && key in templateFields;
-
-      if (!isInTemplate) {
-        if (override?.value !== undefined) field['default'] = override.value;
-        field['platforms'] = override?.platforms ?? {};
-      } else {
-        const templateValue = (templateFields[key] as { default?: unknown } | undefined)?.default;
-        if (override?.isException) {
-          field['isException'] = true;
-          if (override.value !== undefined) field['default'] = override.value;
-        } else {
-          field['isException'] = false;
-          if (templateValue !== undefined) field['default'] = templateValue;
-        }
-        field['platforms'] = override?.platforms ?? {};
-      }
-
-      result[key] = field;
-    }
-
-    return result;
+    return assembleCardFieldsFn(def, template);
   }
 
-  private mergeLangArrays(base: LangItem[], override: LangItem[]): LangItem[] {
-    const result = [...base];
-    for (const item of override) {
-      const idx = result.findIndex((i) => i.lang === item.lang);
-      if (idx >= 0) result[idx] = item;
-      else result.push(item);
-    }
-    return result;
-  }
-
-  private async getCompanyOrThrow(idOrSlug: string): Promise<Company> {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    const company = await this.companyRepo.findOne({
-      where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
-    });
-
-    if (!company || company.status === CompanyStatus.Deleted) {
-      throw new RpcException({ status: 404, message: 'Company not found' });
-    }
-
-    return company;
+  private getCompanyOrThrow(idOrSlug: string): Promise<Company> {
+    return this.access.getCompanyOrThrow(idOrSlug);
   }
 
   private async getGroupOrThrow(groupId: string): Promise<CompanyGroup> {
     const group = await this.groupRepo.findOne({ where: { id: groupId } });
-    if (!group) throw new RpcException({ status: 404, message: 'Group not found' });
+    if (!group)
+      throw new RpcException({ status: 404, message: 'Group not found' });
     return group;
   }
 
-  private async checkBrandAccess(brandId: string, userId: string): Promise<void> {
-    const membership = await this.userBrandRepo.findOne({ where: { brandId, userId } });
-
-    if (!membership) {
-      throw new RpcException({ status: 403, message: 'Forbidden' });
-    }
+  private checkBrandAccess(brandId: string, userId: string): Promise<void> {
+    return this.access.assertBrandAccess(brandId, userId);
   }
 
   private async generateSlug(name: string): Promise<string> {
@@ -707,19 +713,6 @@ export class CompanyService {
   }
 
   private slugify(text: string): string {
-    const map: Record<string, string> = {
-      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh',
-      з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o',
-      п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts',
-      ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu',
-      я: 'ya',
-    };
-    return text
-      .toLowerCase()
-      .split('')
-      .map((c) => map[c] ?? c)
-      .join('')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    return slugifyFn(text);
   }
 }
