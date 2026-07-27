@@ -14,6 +14,7 @@ import { AddCompanies1750000002000 } from './migrations/1750000002000-AddCompani
 import { AddLastLoginAt1750000003000 } from './migrations/1750000003000-AddLastLoginAt';
 import { RefactorCompanySchema1750000004000 } from './migrations/1750000004000-RefactorCompanySchema';
 import { AddCompanyGroups1750000005000 } from './migrations/1750000005000-AddCompanyGroups';
+import { AddIndexes1750000006000 } from './migrations/1750000006000-AddIndexes';
 
 @Module({
   imports: [
@@ -28,7 +29,15 @@ import { AddCompanyGroups1750000005000 } from './migrations/1750000005000-AddCom
         synchronize: false,
         migrationsRun: true,
         extra: { options: '-c timezone=Europe/Moscow' },
-        migrations: [Init1750000000000, AddBrands1750000001000, AddCompanies1750000002000, AddLastLoginAt1750000003000, RefactorCompanySchema1750000004000, AddCompanyGroups1750000005000],
+        migrations: [
+          Init1750000000000,
+          AddBrands1750000001000,
+          AddCompanies1750000002000,
+          AddLastLoginAt1750000003000,
+          RefactorCompanySchema1750000004000,
+          AddCompanyGroups1750000005000,
+          AddIndexes1750000006000,
+        ],
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),

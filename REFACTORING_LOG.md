@@ -175,4 +175,64 @@
 Runtime DI throttler проверен сборкой; функциональную проверку 429 стоит сделать при smoke-тесте стека.
 
 ### Итог Этапа 2
-Статус: **завершён** (2a + 2b). Готово к коммиту одним коммитом Этапа 2.
+Статус: **завершён** (2a + 2b). Закоммичено (f8aef20).
+
+---
+
+## Этап 3 — индексы БД (DB-001)
+Статус: **завершён и проверен на живой dev-БД** (все 6 индексов созданы)
+
+### Цель
+Добавить индексы под частые выборки без изменения данных и схемы таблиц.
+
+### Затрагиваемые файлы
+- `apps/core-service/src/migrations/1750000006000-AddIndexes.ts` (новый) — 6 индексов, `up`/`down`.
+- `apps/core-service/src/core-service.module.ts` — миграция добавлена в рантайм-массив
+  `migrations: [...]` (иначе `migrationsRun: true` её не выполнит; массив явный, не glob).
+
+### Добавленные индексы
+- `IDX_companies_brandId` — companies(brandId)
+- `IDX_company_platforms_platformKey_orgId` — company_platforms(platformKey, orgId)
+- `IDX_company_defaults_templateId` — company_defaults(templateId)
+- `IDX_company_templates_brandId` — company_templates(brandId)
+- `IDX_company_groups_brandId` — company_groups(brandId)
+- `IDX_company_group_members_companyId` — company_group_members(companyId)
+
+Не дублируют существующие индексы из PK/UNIQUE (company_defaults.companyId — PK;
+company_group_members.groupId — ведущий PK; company_platforms(companyId,platformKey) — UNIQUE;
+user_brands(userId,brandId) — UNIQUE).
+
+### Что сохранено (BC)
+- Только `CREATE INDEX` — данные, столбцы, типы, имена таблиц не меняются.
+- Индексы аддитивны; поведение запросов идентично, меняется только план/скорость.
+- `down()` полностью обратим (`DROP INDEX IF EXISTS`).
+
+### Проверки
+- TypeScript: EXIT 0. Тесты: 23/23. Сборка `nest build core-service`: success.
+- **Миграция применена** (`yarn migration:run`) и сверена: `pg_indexes` содержит все 6
+  индексов на ожидаемых таблицах. Запись `AddIndexes1750000006000` есть в таблице `migrations`.
+
+### Риски
+Низкие (аддитивно, idempotent `IF NOT EXISTS`). Применение подтверждено на dev-БД.
+
+### Откат
+`yarn migration:revert` (down удалит индексы) либо `git revert` коммита этапа.
+
+---
+
+## NEW-001 / NEW-002 — фикс CLI-миграций (data-source.ts)
+Статус: **завершён и проверен** (отдельный коммит, вне Этапа 3)
+
+Обнаружено при попытке smoke Этапа 3. Два предсуществующих бага одной природы —
+пути в `apps/core-service/data-source.ts` резолвились от CWD, а не от файла:
+- NEW-001: `config({ path: '../../.env' })` → `.env` не грузился → `yarn migration:run`
+  падал с `SASL: client password must be a string` (DATABASE_URL=undefined).
+- NEW-002: `migrations: ['./src/migrations/*.ts']` → CLI не находил файлы миграций
+  («No migrations are pending» ложно; миграции применялись только рантаймом core-service).
+
+Фикс: `config({ path: join(__dirname, '../../.env') })` и
+`migrations: [join(__dirname, 'src/migrations/*.ts')]`.
+
+Проверка: `yarn migration:run` находит 7 миграций, применяет недостающую `AddIndexes`;
+индексы подтверждены в `pg_indexes`. Рантайм (`migrationsRun` с явным массивом) не затронут.
+Риск: минимальный (чинит только CLI-путь).
