@@ -10,10 +10,10 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Patterns } from '@geo/contracts';
-import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { sendRpc } from '../common/rpc';
 
 const RPC_TIMEOUT = 10000;
 
@@ -58,7 +58,8 @@ export class TwoGisImportController {
     private readonly coreClient: ClientProxy,
     private readonly config: ConfigService,
   ) {
-    this.mapParserUrl = this.config.get<string>('MAP_PARSER_URL') ?? 'http://geo-map-parser:3005';
+    this.mapParserUrl =
+      this.config.get<string>('MAP_PARSER_URL') ?? 'http://geo-map-parser:3005';
   }
 
   @Post()
@@ -70,33 +71,35 @@ export class TwoGisImportController {
     const org = await this.fetchOrg(dto.orgId);
     const branches = await this.fetchBranches(dto.orgId);
 
-    const brand = await firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_CREATE, {
-          name: org.name,
-          timezone: dto.timezone ?? 'Europe/Moscow',
-          userId: user.userId,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
+    const brand = await sendRpc(
+      this.coreClient,
+      Patterns.BRAND_CREATE,
+      {
+        name: org.name,
+        timezone: dto.timezone ?? 'Europe/Moscow',
+        userId: user.userId,
+      },
+      RPC_TIMEOUT,
     );
 
     const companies: unknown[] = [];
 
     for (const branch of branches) {
       const catalog = await this.fetchBranchCatalog(branch.id);
-      const company = await firstValueFrom(
-        this.coreClient
-          .send(Patterns.COMPANY_CREATE, {
-            brandId: brand.id,
-            userId: user.userId,
-            name: branch.name,
-            twoGisOrgId: branch.id,
-            addressDisplay: branch.address_name ?? branch.address ?? null,
-            rating: catalog?.reviews?.general_rating ?? null,
-            reviewCount: catalog?.reviews?.general_review_count ?? 0,
-            card: catalog ? this.mapCatalogToCard(catalog) : undefined,
-          })
-          .pipe(timeout(RPC_TIMEOUT)),
+      const company = await sendRpc(
+        this.coreClient,
+        Patterns.COMPANY_CREATE,
+        {
+          brandId: brand.id,
+          userId: user.userId,
+          name: branch.name,
+          twoGisOrgId: branch.id,
+          addressDisplay: branch.address_name ?? branch.address ?? null,
+          rating: catalog?.reviews?.general_rating ?? null,
+          reviewCount: catalog?.reviews?.general_review_count ?? 0,
+          card: catalog ? this.mapCatalogToCard(catalog) : undefined,
+        },
+        RPC_TIMEOUT,
       );
       companies.push(company);
     }
@@ -128,10 +131,11 @@ export class TwoGisImportController {
 
       // check if brand already exists via any known branch
       for (const branch of branches) {
-        const existing = await firstValueFrom(
-          this.coreClient
-            .send(Patterns.COMPANY_FIND_BY_TWOGIS_ORG_ID, { orgId: branch.id })
-            .pipe(timeout(RPC_TIMEOUT)),
+        const existing = await sendRpc(
+          this.coreClient,
+          Patterns.COMPANY_FIND_BY_TWOGIS_ORG_ID,
+          { orgId: branch.id },
+          RPC_TIMEOUT,
         );
         if (existing) {
           skipped.push(branch.id);
@@ -142,15 +146,16 @@ export class TwoGisImportController {
       const brandStatus = org.isActive === false ? 'suspended' : 'active';
 
       if (!brandId) {
-        const brand = await firstValueFrom(
-          this.coreClient
-            .send(Patterns.BRAND_CREATE, {
-              name: org.name,
-              timezone: dto.timezone ?? 'Europe/Moscow',
-              userId: user.userId,
-              status: brandStatus,
-            })
-            .pipe(timeout(RPC_TIMEOUT)),
+        const brand = await sendRpc(
+          this.coreClient,
+          Patterns.BRAND_CREATE,
+          {
+            name: org.name,
+            timezone: dto.timezone ?? 'Europe/Moscow',
+            userId: user.userId,
+            status: brandStatus,
+          },
+          RPC_TIMEOUT,
         );
         brandId = brand.id;
         created.push({ brand, companies: newCompanies });
@@ -161,19 +166,20 @@ export class TwoGisImportController {
         if (alreadySkipped) continue;
 
         const catalog = await this.fetchBranchCatalog(branch.id);
-        const company = await firstValueFrom(
-          this.coreClient
-            .send(Patterns.COMPANY_CREATE, {
-              brandId,
-              userId: user.userId,
-              name: branch.name,
-              twoGisOrgId: branch.id,
-              addressDisplay: branch.address_name ?? branch.address ?? null,
-              rating: catalog?.reviews?.general_rating ?? null,
-              reviewCount: catalog?.reviews?.general_review_count ?? 0,
-              card: catalog ? this.mapCatalogToCard(catalog) : undefined,
-            })
-            .pipe(timeout(RPC_TIMEOUT)),
+        const company = await sendRpc(
+          this.coreClient,
+          Patterns.COMPANY_CREATE,
+          {
+            brandId,
+            userId: user.userId,
+            name: branch.name,
+            twoGisOrgId: branch.id,
+            addressDisplay: branch.address_name ?? branch.address ?? null,
+            rating: catalog?.reviews?.general_rating ?? null,
+            reviewCount: catalog?.reviews?.general_review_count ?? 0,
+            card: catalog ? this.mapCatalogToCard(catalog) : undefined,
+          },
+          RPC_TIMEOUT,
         );
         newCompanies.push(company);
       }
@@ -224,11 +230,17 @@ export class TwoGisImportController {
     return data.result?.items ?? [];
   }
 
-  private async fetchBranchCatalog(branchId: string): Promise<TwoGisCatalogItem | null> {
+  private async fetchBranchCatalog(
+    branchId: string,
+  ): Promise<TwoGisCatalogItem | null> {
     try {
-      const res = await fetch(`${this.mapParserUrl}/2gis/account/branch/${branchId}`);
+      const res = await fetch(
+        `${this.mapParserUrl}/2gis/account/branch/${branchId}`,
+      );
       if (!res.ok) return null;
-      const data = (await res.json()) as { result?: { items?: TwoGisCatalogItem[] } };
+      const data = (await res.json()) as {
+        result?: { items?: TwoGisCatalogItem[] };
+      };
       return data.result?.items?.[0] ?? null;
     } catch {
       return null;
@@ -245,15 +257,25 @@ export class TwoGisImportController {
 
     for (const group of item.contact_groups ?? []) {
       for (const c of group.contacts ?? []) {
-        if (c.type === 'phone') phones.push({ value: c.value, comment: c.comment });
+        if (c.type === 'phone')
+          phones.push({ value: c.value, comment: c.comment });
         else if (c.type === 'website') websites.push(c.value);
         else socials.push({ type: c.type, value: c.value });
       }
     }
 
     return {
-      ...(primary ? { mainCategory: { id: primary.id, name: primary.name } } : {}),
-      ...(additional.length ? { additionalCategories: additional.map((r) => ({ id: r.id, name: r.name })) } : {}),
+      ...(primary
+        ? { mainCategory: { id: primary.id, name: primary.name } }
+        : {}),
+      ...(additional.length
+        ? {
+            additionalCategories: additional.map((r) => ({
+              id: r.id,
+              name: r.name,
+            })),
+          }
+        : {}),
       ...(item.schedule ? { schedule: item.schedule } : {}),
       ...(phones.length ? { phones } : {}),
       ...(websites.length ? { websites } : {}),

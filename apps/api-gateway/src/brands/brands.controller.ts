@@ -38,15 +38,14 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import type { Request as ExpressRequest } from 'express';
 import { Patterns } from '@geo/contracts';
-import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { sendRpc } from '../common/rpc';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { existsSync, mkdirSync } from 'fs';
 
-const RPC_TIMEOUT = 5000;
 const ALLOWED_MIME = /^image\/(jpeg|png|webp|svg\+xml)$/;
 const mimeToExt: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -99,29 +98,24 @@ export class BrandsController {
 
   @Get()
   list(@CurrentUser() user: { userId: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_LIST, { userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_LIST, {
+      userId: user.userId,
+    });
   }
 
   @Get('short')
   listShort(@CurrentUser() user: { userId: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_LIST_SHORT, { userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_LIST_SHORT, {
+      userId: user.userId,
+    });
   }
 
   @Get(':id')
   get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_GET, { brandId: id, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_GET, {
+      brandId: id,
+      userId: user.userId,
+    });
   }
 
   @Post()
@@ -141,21 +135,20 @@ export class BrandsController {
       ? `${req.protocol}://${req.get('host')}/uploads/${logo.filename}`
       : dto.logoUrl;
 
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_CREATE, { ...dto, logoUrl, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_CREATE, {
+      ...dto,
+      logoUrl,
+      userId: user.userId,
+    });
   }
 
   @Delete(':id')
   @HttpCode(204)
   delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_DELETE, { brandId: id, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_DELETE, {
+      brandId: id,
+      userId: user.userId,
+    });
   }
 
   @Patch(':id')
@@ -170,15 +163,11 @@ export class BrandsController {
     const logoUrl = logo
       ? `${req.protocol}://${req.hostname}/uploads/${logo.filename}`
       : dto.logoUrl;
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.BRAND_UPDATE, {
-          brandId: id,
-          ...dto,
-          logoUrl,
-          userId: user.userId,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.BRAND_UPDATE, {
+      brandId: id,
+      ...dto,
+      logoUrl,
+      userId: user.userId,
+    });
   }
 }

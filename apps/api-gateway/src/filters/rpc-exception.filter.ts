@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Response } from 'express';
+import { codeFromStatus } from '../common/error-codes';
 
 @Catch(RpcException)
 export class RpcExceptionFilter implements ExceptionFilter {
@@ -25,16 +26,4 @@ export class RpcExceptionFilter implements ExceptionFilter {
       error: { code, message },
     });
   }
-}
-
-function codeFromStatus(status: number): string {
-  const map: Record<number, string> = {
-    400: 'VALIDATION_ERROR',
-    401: 'UNAUTHORIZED',
-    403: 'FORBIDDEN',
-    404: 'NOT_FOUND',
-    409: 'CONFLICT',
-    422: 'UNPROCESSABLE_ENTITY',
-  };
-  return map[status] ?? 'INTERNAL_ERROR';
 }

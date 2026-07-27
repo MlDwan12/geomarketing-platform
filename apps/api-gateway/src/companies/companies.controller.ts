@@ -15,13 +15,11 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
-import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PageQueryDto } from '../common/page-query.dto';
-
-const RPC_TIMEOUT = 5000;
+import { sendRpc } from '../common/rpc';
 
 @Controller('companies')
 @UseGuards(SessionGuard)
@@ -38,11 +36,12 @@ export class CompaniesController {
     @CurrentUser() user: { userId: string },
     @Query() { page, limit }: PageQueryDto,
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_LIST, { brandId, userId: user.userId, page, limit })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_LIST, {
+      brandId,
+      userId: user.userId,
+      page,
+      limit,
+    });
   }
 
   @Post()
@@ -52,34 +51,33 @@ export class CompaniesController {
     @Body() body: Record<string, unknown>,
     @CurrentUser() user: { userId: string },
   ) {
-    const { status, templateId, groups, code, twoGisOrgId, ...rawFields } = body as {
-      status?: string;
-      templateId?: string | null;
-      groups?: { id: string }[];
-      code?: string;
-      twoGisOrgId?: string;
-      [key: string]: unknown;
-    };
+    const { status, templateId, groups, code, twoGisOrgId, ...rawFields } =
+      body as {
+        status?: string;
+        templateId?: string | null;
+        groups?: { id: string }[];
+        code?: string;
+        twoGisOrgId?: string;
+        [key: string]: unknown;
+      };
 
-    const namesField = rawFields.names as { default: { val: string }[] } | undefined;
+    const namesField = rawFields.names as
+      | { default: { val: string }[] }
+      | undefined;
     const name = namesField?.default?.[0]?.val;
 
     const fieldOverrides = buildFieldOverrides(rawFields, !!templateId);
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_CREATE, {
-          brandId,
-          userId: user.userId,
-          name,
-          status,
-          templateId: templateId ?? null,
-          code,
-          twoGisOrgId,
-          groups: groups ?? [],
-          fieldOverrides,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_CREATE, {
+      brandId,
+      userId: user.userId,
+      name,
+      status,
+      templateId: templateId ?? null,
+      code,
+      twoGisOrgId,
+      groups: groups ?? [],
+      fieldOverrides,
+    });
   }
 
   @Get(':id')
@@ -88,11 +86,11 @@ export class CompaniesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_GET, { companyId: id, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_GET, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   @Delete(':id')
@@ -102,11 +100,11 @@ export class CompaniesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_DELETE, { companyId: id, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_DELETE, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // GET /companies/:id/platforms — full connection data (orgId, connectedAt, syncError, ...)
@@ -116,11 +114,11 @@ export class CompaniesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_PLATFORMS_GET, { companyId: id, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_PLATFORMS_GET, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // PATCH /companies/:id/default
@@ -128,19 +126,16 @@ export class CompaniesController {
   updateDefault(
     @Param('id') id: string,
     @Headers('x-brand-id') brandId: string,
-    @Body() dto: { templateId?: string | null; fields?: Record<string, unknown> },
+    @Body()
+    dto: { templateId?: string | null; fields?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_DEFAULT_UPDATE, {
-          companyId: id,
-          brandId,
-          userId: user.userId,
-          ...dto,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_DEFAULT_UPDATE, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+      ...dto,
+    });
   }
 
   // PATCH /companies/:id/groups
@@ -152,16 +147,12 @@ export class CompaniesController {
     @Body() dto: { groupIds: string[] },
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_GROUPS_UPDATE, {
-          companyId: id,
-          brandId,
-          userId: user.userId,
-          groupIds: dto.groupIds,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_GROUPS_UPDATE, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+      groupIds: dto.groupIds,
+    });
   }
 
   // GET /companies/:slug/main_data
@@ -171,11 +162,11 @@ export class CompaniesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_MAIN_DATA_GET, { companyId: slug, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_MAIN_DATA_GET, {
+      companyId: slug,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // PATCH /companies/:id/platforms/:platformKey
@@ -185,20 +176,21 @@ export class CompaniesController {
     @Param('id') id: string,
     @Param('platformKey') platformKey: string,
     @Headers('x-brand-id') brandId: string,
-    @Body() dto: { isEnabled?: boolean; orgId?: string | null; orgName?: string | null },
+    @Body()
+    dto: {
+      isEnabled?: boolean;
+      orgId?: string | null;
+      orgName?: string | null;
+    },
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.COMPANY_PLATFORM_UPDATE, {
-          companyId: id,
-          brandId,
-          userId: user.userId,
-          platformKey,
-          ...dto,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.COMPANY_PLATFORM_UPDATE, {
+      companyId: id,
+      brandId,
+      userId: user.userId,
+      platformKey,
+      ...dto,
+    });
   }
 }
 

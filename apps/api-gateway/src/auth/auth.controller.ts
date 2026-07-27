@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
-import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -25,8 +24,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SessionGuard } from './guards/session.guard';
-
-const RPC_TIMEOUT = 5000;
+import { sendRpc } from '../common/rpc';
 
 @Controller('auth')
 @UseFilters(RpcExceptionFilter)
@@ -39,14 +37,10 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(@Body() dto: LoginDto, @Req() req: any) {
-    const user = await firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_VALIDATE, {
-          email: dto.email,
-          password: dto.password,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    const user = await sendRpc(this.coreClient, Patterns.USER_VALIDATE, {
+      email: dto.email,
+      password: dto.password,
+    });
 
     if (!user) {
       throw new UnauthorizedException('Неверный email или пароль');
@@ -56,7 +50,14 @@ export class AuthController {
     req.session.role = user.role;
     await new Promise<void>((resolve, reject) =>
       req.session.save((err: unknown) => {
-        console.log('[LOGIN] session.save err:', err, 'sessionID:', req.sessionID, 'userId:', req.session.userId);
+        console.log(
+          '[LOGIN] session.save err:',
+          err,
+          'sessionID:',
+          req.sessionID,
+          'userId:',
+          req.session.userId,
+        );
         err ? reject(err) : resolve();
       }),
     );
@@ -75,16 +76,12 @@ export class AuthController {
   @Post('register')
   @HttpCode(201)
   async register(@Body() dto: RegisterDto, @Req() req: any) {
-    const user = await firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_CREATE, {
-          name: dto.name,
-          email: dto.email,
-          password: dto.password,
-          referralCode: dto.referralCode,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    const user = await sendRpc(this.coreClient, Patterns.USER_CREATE, {
+      name: dto.name,
+      email: dto.email,
+      password: dto.password,
+      referralCode: dto.referralCode,
+    });
 
     req.session.userId = user.id;
     req.session.role = user.role;
@@ -105,11 +102,9 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(200)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    const token = await firstValueFrom(
-      this.coreClient
-        .send(Patterns.PWD_RESET_CREATE, { email: dto.email })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    const token = await sendRpc(this.coreClient, Patterns.PWD_RESET_CREATE, {
+      email: dto.email,
+    });
 
     // TODO: заменить на отправку через mail-service
     if (token) {
@@ -122,25 +117,19 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(200)
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    await firstValueFrom(
-      this.coreClient
-        .send(Patterns.PWD_RESET_CONSUME, {
-          token: dto.token,
-          newPassword: dto.password,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    await sendRpc(this.coreClient, Patterns.PWD_RESET_CONSUME, {
+      token: dto.token,
+      newPassword: dto.password,
+    });
     return {};
   }
 
   @Get('me')
   @UseGuards(SessionGuard)
   me(@CurrentUser() user: { userId: string; role: string }) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_GET_PROFILE, { userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.USER_GET_PROFILE, {
+      userId: user.userId,
+    });
   }
 
   @Post('logout')
@@ -159,15 +148,11 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: { userId: string },
   ) {
-    await firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_CHANGE_PASSWORD, {
-          userId: user.userId,
-          currentPassword: dto.currentPassword,
-          newPassword: dto.newPassword,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    await sendRpc(this.coreClient, Patterns.USER_CHANGE_PASSWORD, {
+      userId: user.userId,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+    });
     return {};
   }
 
@@ -177,11 +162,10 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_UPDATE_PROFILE, { userId: user.userId, ...dto })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.USER_UPDATE_PROFILE, {
+      userId: user.userId,
+      ...dto,
+    });
   }
 
   @Patch('avatar')
@@ -190,13 +174,9 @@ export class AuthController {
     @Body() dto: UpdateAvatarDto,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.USER_UPDATE_AVATAR, {
-          userId: user.userId,
-          avatarUrl: dto.avatarUrl,
-        })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.USER_UPDATE_AVATAR, {
+      userId: user.userId,
+      avatarUrl: dto.avatarUrl,
+    });
   }
 }

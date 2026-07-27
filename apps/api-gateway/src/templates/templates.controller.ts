@@ -14,12 +14,10 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
-import { firstValueFrom, timeout } from 'rxjs';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-const RPC_TIMEOUT = 5000;
+import { sendRpc } from '../common/rpc';
 
 @Controller('templates')
 @UseGuards(SessionGuard)
@@ -36,11 +34,10 @@ export class TemplatesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_LIST, { brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_LIST, {
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // GET /templates/stats — все шаблоны текущего бренда с кол. компаний
@@ -49,11 +46,10 @@ export class TemplatesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_LIST_STATS, { brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_LIST_STATS, {
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // GET /templates/:id — шаблон с полями и списком компаний
@@ -63,11 +59,11 @@ export class TemplatesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_GET, { templateId: id, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_GET, {
+      templateId: id,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // POST /templates
@@ -80,11 +76,11 @@ export class TemplatesController {
     @Body() dto: { name: string; fields: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_CREATE, { ...dto, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_CREATE, {
+      ...dto,
+      brandId,
+      userId: user.userId,
+    });
   }
 
   // PATCH /templates/:id
@@ -96,11 +92,12 @@ export class TemplatesController {
     @Body() dto: { name?: string; fields?: Record<string, unknown> },
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_UPDATE, { templateId: id, brandId, userId: user.userId, ...dto })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_UPDATE, {
+      templateId: id,
+      brandId,
+      userId: user.userId,
+      ...dto,
+    });
   }
 
   // DELETE /templates/:id
@@ -111,10 +108,10 @@ export class TemplatesController {
     @Headers('x-brand-id') brandId: string,
     @CurrentUser() user: { userId: string },
   ) {
-    return firstValueFrom(
-      this.coreClient
-        .send(Patterns.TEMPLATE_DELETE, { templateId: id, brandId, userId: user.userId })
-        .pipe(timeout(RPC_TIMEOUT)),
-    );
+    return sendRpc(this.coreClient, Patterns.TEMPLATE_DELETE, {
+      templateId: id,
+      brandId,
+      userId: user.userId,
+    });
   }
 }

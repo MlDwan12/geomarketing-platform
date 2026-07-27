@@ -1,7 +1,7 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom, timeout } from 'rxjs';
+import { sendRpc } from './common/rpc';
 
 @Controller()
 export class ApiGatewayController {
@@ -18,8 +18,6 @@ export class ApiGatewayController {
 
   @Get('health/core')
   async checkCore() {
-    return firstValueFrom(
-      this.coreClient.send('core.ping', {}).pipe(timeout(3000)),
-    );
+    return sendRpc(this.coreClient, 'core.ping', {}, 3000);
   }
 }
