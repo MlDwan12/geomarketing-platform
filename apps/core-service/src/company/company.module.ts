@@ -10,6 +10,9 @@ import { UserBrand } from '../brand/user-brand.entity';
 import { CompanyController } from './company.controller';
 import { CompanyService } from './company.service';
 import { CompanyAccessService } from './company-access.service';
+import { CompanyTemplateService } from './company-template.service';
+import { CompanyGroupService } from './company-group.service';
+import { CompanyPlatformService } from './company-platform.service';
 
 @Module({
   imports: [
@@ -24,6 +27,12 @@ import { CompanyAccessService } from './company-access.service';
     ]),
   ],
   controllers: [CompanyController],
-  providers: [CompanyService, CompanyAccessService],
+  providers: [
+    CompanyService,
+    CompanyAccessService,
+    CompanyTemplateService,
+    CompanyGroupService,
+    CompanyPlatformService,
+  ],
 })
 export class CompanyModule {}

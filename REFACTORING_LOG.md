@@ -221,7 +221,7 @@ user_brands(userId,brandId) — UNIQUE).
 ---
 
 ## Этап 4 — декомпозиция CompanyService (ARCH-001), подход «фасад»
-Статус: **в работе** (4.1, 4.2 завершены и проверены; 4.3–4.5 — следующие)
+Статус: **завершён** (4.1–4.5, все проверены)
 
 Принцип: `CompanyService` сохраняет все публичные методы и сигнатуры → core-контроллер
 и RMQ-паттерны не меняются (нулевой риск для контрактов). Логика выносится в модули/сервисы,
@@ -242,9 +242,30 @@ user_brands(userId,brandId) — UNIQUE).
 - `company.module.ts`: `CompanyAccessService` добавлен в providers.
 - Проверки: tsc 0, тесты 23/23, build success. Публичные методы и поведение не изменились.
 
-### 4.3–4.5 — под-сервисы (СЛЕДУЮЩЕЕ)
-- `CompanyTemplateService`, `CompanyGroupService`, `CompanyPlatformService`;
-  `CompanyService` делегирует соответствующие методы (фасад).
+### 4.3–4.5 — под-сервисы (фасад)
+Статус: завершён (отдельный коммит, поверх чекпоинта 4.1+4.2)
+- Новые сервисы (в `CompanyModule` providers):
+  - `company-template.service.ts` — list/listStats/get/create/update/delete шаблонов.
+  - `company-group.service.ts` — list/listStats/get/create/update/delete групп,
+    add/removeCompanies, updateCompanyGroups (+ приватный getGroupOrThrow).
+  - `company-platform.service.ts` — updatePlatform, getPlatforms, findByTwoGisOrgId.
+- `CompanyService` теперь фасад: template/group/platform-методы делегируют в под-сервисы,
+  сохраняя те же публичные сигнатуры; удалён неиспользуемый `getGroupOrThrow` и импорт `ILike`.
+  Ядро (list/get/create/delete/getMainData/updateDefault/resolveForPlatform) осталось в сервисе.
+- `company.service.ts`: 725 → 483 строки.
+- Под-сервисы используют общий `CompanyAccessService` (assertBrandAccess/getCompanyOrThrow).
+
+Что сохранено (BC):
+- Все публичные методы `CompanyService` и их сигнатуры — без изменений → `company.controller.ts`
+  и RMQ-паттерны не тронуты. Формы ответов и логика идентичны (методы — точные копии).
+- Характеризационные тесты Этапа 0 (assemble/resolve/slugify через CompanyService): 23/23.
+
+Проверки: tsc 0, тесты 23/23, `nest build core-service` success. DI: под-сервисы без циклов
+(не инжектят CompanyService). Формат затронул только файлы Этапа 4 — случайные prettier-правки
+несвязанных файлов (company.controller.ts и др.) откатаны.
+
+Риски: низкие для контрактов (фасад). Функциональная проверка через RMQ на живом стеке
+не прогонялась — рекомендуется smoke ключевых сценариев (get/create/updateDefault/группы/шаблоны).
 
 ---
 
