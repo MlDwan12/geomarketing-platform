@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-06-24",
+  "__export_date": "2026-06-25",
   "__export_source": "geomarketing-platform",
   "resources": [
     {
@@ -30,7 +30,8 @@
         "template_id": "",
         "group_id": "",
         "twogis_org_id": "70000001056220281",
-        "twogis_branch_id": "70000001056220282"
+        "twogis_branch_id": "70000001056220282",
+        "test_stand": "https://esotericmir.online/api"
       },
       "color": "#4CAF50",
       "isPrivate": false
@@ -357,12 +358,12 @@
       "_id": "req_groups_stats",
       "_type": "request",
       "parentId": "fld_groups",
-      "name": "List Groups Stats (все бренды)",
+      "name": "List Groups Stats",
       "method": "GET",
       "url": "{{ base_url }}/groups/stats",
-      "description": "Группы по всем брендам юзера с кол. компаний [{ id, name, brandId, companiesCount }]. X-Brand-Id не нужен. Поддерживает ?search=.",
+      "description": "Группы бренда с кол. компаний [{ id, name, brandId, companiesCount }]. Поддерживает ?search=.",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [{ "name": "search", "value": "", "disabled": true }],
       "authentication": {}
     },
@@ -396,7 +397,7 @@
       "url": "{{ base_url }}/groups/{{ group_id }}",
       "description": "Конкретная группа. Возвращает:\n{\n  id, name, companiesCount,\n  companies: [{ id, name }]\n}",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -413,7 +414,10 @@
         "mimeType": "application/json",
         "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -430,7 +434,10 @@
         "mimeType": "application/json",
         "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -447,7 +454,10 @@
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Флагманские точки\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -461,7 +471,7 @@
       "url": "{{ base_url }}/groups/{{ group_id }}",
       "description": "Удаляет группу. Все привязки компаний к группе удаляются каскадно. Возвращает 204.",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -492,12 +502,12 @@
       "_id": "req_templates_list_stats",
       "_type": "request",
       "parentId": "fld_templates",
-      "name": "List Templates Stats (все бренды)",
+      "name": "List Templates Stats",
       "method": "GET",
       "url": "{{ base_url }}/templates/stats",
-      "description": "Шаблоны по всем брендам юзера с кол. компаний [{ id, name, brandId, companiesCount }]. X-Brand-Id не нужен.",
+      "description": "Шаблоны бренда с кол. компаний [{ id, name, brandId, companiesCount }].",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -511,7 +521,7 @@
       "url": "{{ base_url }}/templates/{{ template_id }}",
       "description": "Шаблон с полями и списком компаний. Возвращает: { id, name, fields, companiesCount, companies: [{ id, name, slug }] }",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -523,7 +533,7 @@
       "name": "Create Template",
       "method": "POST",
       "url": "{{ base_url }}/templates",
-      "description": "Создаёт шаблон. fields — объект с выбранными полями, каждое в формате { default: value }.\nТолько нужные поля — остальные не включай.",
+      "description": "Создаёт шаблон. fields — только нужные поля в формате { default: value }.\nПоля шаблона определяют какие поля будут с isException у компании.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Основной шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" },\n        { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    },\n    \"schedule\": {\n      \"default\": {\n        \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n        \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n      }\n    },\n    \"mainCategory\": {\n      \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n    },\n    \"descriptions\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Сеть уютных кофеен\" }\n      ]\n    }\n  }\n}"
@@ -548,7 +558,10 @@
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Обновлённый шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Новое название\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    }\n  }\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -562,7 +575,7 @@
       "url": "{{ base_url }}/templates/{{ template_id }}",
       "description": "Удаляет шаблон. Компании отвязываются (templateId → null), данные не теряются. Возвращает 204.",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -572,7 +585,7 @@
       "_type": "request_group",
       "parentId": "wrk_geo",
       "name": "Companies",
-      "description": "CRUD компаний (филиалов). Все запросы требуют активной сессии."
+      "description": "CRUD компаний (филиалов). Все запросы требуют X-Brand-Id и активной сессии."
     },
 
     {
@@ -599,29 +612,9 @@
       "name": "Get Company (full)",
       "method": "GET",
       "url": "{{ base_url }}/companies/{{ company_id }}",
-      "description": "Полный профиль: базовые поля + card (templateId + fields) + platformsInfo.\n\ncard.fields без шаблона: { fieldName: { value: ..., platforms: {} } }\ncard.fields с шаблоном:  { fieldName: { isException: bool, default: ..., platforms: {} } }",
+      "description": "Полный профиль: базовые поля + card (templateId + fields) + platformsInfo.\n\nПоле без шаблона:      { default: ..., platforms: {} }\nПоле с шаблоном:       { isException: false, default: <из шаблона>, platforms: {} }\nПоле-исключение:       { isException: true,  default: <своё значение>, platforms: {} }",
       "body": {},
-      "headers": [],
-      "parameters": [],
-      "authentication": {}
-    },
-
-    {
-      "_id": "req_companies_create",
-      "_type": "request",
-      "parentId": "fld_companies",
-      "name": "Create Company (full)",
-      "method": "POST",
-      "url": "{{ base_url }}/companies",
-      "description": "Создаёт компанию со всеми данными карточки за один запрос.\n\nВсе поля карточки (names, phones, schedule, specialDays и т.д.) оборачиваются в { default: value }.\nИсключения без обёртки: status, templateId, groups.\n\nname деривируется из names.default[0].val — обязательное поле.\ngroups — массив { id } существующих групп бренда.\nstatus — опциональный, по умолчанию draft.",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"status\": \"active\",\n  \"templateId\": null,\n  \"groups\": [\n    { \"id\": \"{{ group_id }}\" },\n    { \"name\": \"Новая группа\" }\n  ],\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Название Ру\" }\n    ]\n  },\n  \"shortNames\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Короткое наз. ру\" }\n    ]\n  },\n  \"altNames\": {\n    \"default\": [\n      { \"val\": \"Альт. название\" }\n    ]\n  },\n  \"descriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание ру\" }\n    ]\n  },\n  \"shortDescriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание короткое ру\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"Khant2709@gmail.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false },\n      { \"phone\": \"+70000000002\", \"ext\": \"101\", \"description\": \"Дополнительный\", \"hidden\": false },\n      { \"phone\": \"+70000000003\", \"ext\": \"\", \"description\": \"Скрытый\", \"hidden\": true }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"11111111\",\n      \"comment\": \"2 этаж, вход со двора\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"websites\": {\n    \"default\": [\n      { \"type\": \"main\", \"url\": \"https://aroma-coffee.ru\" },\n      { \"type\": \"additional\", \"url\": \"https://menu.aroma-coffee.ru\" }\n    ]\n  },\n  \"socials\": {\n    \"default\": [\n      { \"type\": \"instagram\", \"url\": \"https://instagram.com/aroma_coffee\" },\n      { \"type\": \"vk\", \"url\": \"https://vk.com/aroma_coffee\" }\n    ]\n  },\n  \"schedule\": {\n    \"default\": {\n      \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n      \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n    }\n  },\n  \"specialDays\": {\n    \"default\": [\n      { \"date\": \"01.01.2026\", \"closed\": true, \"from\": \"09:00\", \"to\": \"21:00\" },\n      { \"date\": \"02.01.2026\", \"closed\": false, \"from\": \"10:00\", \"to\": \"16:00\" }\n    ]\n  },\n  \"mainCategory\": {\n    \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n  },\n  \"additionalCategories\": {\n    \"default\": [\n      { \"id\": \"cafe\", \"name\": \"Кафе\" },\n      { \"id\": \"bakery\", \"name\": \"Пекарня\" }\n    ]\n  }\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
-      ],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -633,9 +626,69 @@
       "name": "Get Company Main Data (form)",
       "method": "GET",
       "url": "{{ base_url }}/companies/{{ company_slug }}/main_data",
-      "description": "Данные для формы редактирования.\nВозвращает: { id, name, groups, platformsInfo, templateId, fields: { status, names, phones, ... } }\n\nfield без шаблона: { default: ..., platforms: {} }\nfield с шаблоном:  { isException: bool, default: ..., platforms: {} }",
+      "description": "Данные для формы редактирования.\nВозвращает: { id, name, groups, platformsInfo, templateId, fields: { status, ...card fields } }\n\nПоле без шаблона:      { default: ..., platforms: {} }\nПоле с шаблоном:       { isException: false, default: <из шаблона>, platforms: {} }\nПоле-исключение:       { isException: true,  default: <своё значение>, platforms: {} }",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_create_no_template",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Create Company (без шаблона)",
+      "method": "POST",
+      "url": "{{ base_url }}/companies",
+      "description": "Компания без шаблона. В ответе все поля возвращаются без флага isException — только { default, platforms }.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"active\",\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Тестовая компания\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"test@example.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"city\": \"Москва\",\n      \"street\": \"Тверская\",\n      \"building\": \"1\"\n    }\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_create_with_template",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Create Company (с шаблоном + исключения)",
+      "method": "POST",
+      "url": "{{ base_url }}/companies",
+      "description": "Компания с шаблоном. Поля которые есть в шаблоне и не переданы → isException: false (значение из шаблона). Поля переданные в запросе и есть в шаблоне → isException: true (исключение). Поля которых нет в шаблоне → без isException.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"active\",\n  \"templateId\": \"{{ template_id }}\",\n  \"groups\": [],\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"1\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"email\": {\n    \"default\": \"company@example.com\"\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+
+    {
+      "_id": "req_companies_create_full",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Create Company (full, все поля)",
+      "method": "POST",
+      "url": "{{ base_url }}/companies",
+      "description": "Создаёт компанию со всеми данными карточки за один запрос.\n\nВсе поля карточки (names, phones, schedule, specialDays и т.д.) оборачиваются в { default: value }.\nИсключения без обёртки: status, templateId, groups.\n\nname деривируется из names.default[0].val — обязательное поле.\ngroups — массив { id } существующих или { name } новых групп.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"active\",\n  \"templateId\": null,\n  \"groups\": [\n    { \"id\": \"{{ group_id }}\" },\n    { \"name\": \"Новая группа\" }\n  ],\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" }\n    ]\n  },\n  \"shortNames\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Короткое наз. ру\" }\n    ]\n  },\n  \"altNames\": {\n    \"default\": [\n      { \"val\": \"Альт. название\" }\n    ]\n  },\n  \"descriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание ру\" }\n    ]\n  },\n  \"shortDescriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание короткое ру\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"company@example.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false },\n      { \"phone\": \"+70000000002\", \"ext\": \"101\", \"description\": \"Дополнительный\", \"hidden\": false },\n      { \"phone\": \"+70000000003\", \"ext\": \"\", \"description\": \"Скрытый\", \"hidden\": true }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"11111111\",\n      \"comment\": \"2 этаж, вход со двора\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"websites\": {\n    \"default\": [\n      { \"type\": \"main\", \"url\": \"https://aroma-coffee.ru\" },\n      { \"type\": \"additional\", \"url\": \"https://menu.aroma-coffee.ru\" }\n    ]\n  },\n  \"socials\": {\n    \"default\": [\n      { \"type\": \"instagram\", \"url\": \"https://instagram.com/aroma_coffee\" },\n      { \"type\": \"vk\", \"url\": \"https://vk.com/aroma_coffee\" }\n    ]\n  },\n  \"schedule\": {\n    \"default\": {\n      \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n      \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n    }\n  },\n  \"specialDays\": {\n    \"default\": [\n      { \"date\": \"01.01.2026\", \"closed\": true, \"from\": \"09:00\", \"to\": \"21:00\" },\n      { \"date\": \"02.01.2026\", \"closed\": false, \"from\": \"10:00\", \"to\": \"16:00\" }\n    ]\n  },\n  \"mainCategory\": {\n    \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n  },\n  \"additionalCategories\": {\n    \"default\": [\n      { \"id\": \"cafe\", \"name\": \"Кафе\" },\n      { \"id\": \"bakery\", \"name\": \"Пекарня\" }\n    ]\n  }\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -669,7 +722,7 @@
       "url": "{{ base_url }}/companies/{{ company_id }}",
       "description": "Soft-delete: ставит status=deleted. Возвращает 204.",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -681,12 +734,15 @@
       "name": "Update Company Default (card)",
       "method": "PATCH",
       "url": "{{ base_url }}/companies/{{ company_id }}/default",
-      "description": "Обновляет карточку компании. fields — мердж на уровне поля, нетронутые поля не меняются.\n\nС шаблоном: { isException: true, value: ... } или { isException: false } (взять из шаблона).\nБез шаблона: { value: ... }",
+      "description": "Обновляет карточку компании. fields — мердж на уровне поля.\n\nС шаблоном, исключение:  { value: ..., isException: true }\nС шаблоном, из шаблона:  { isException: false }\nБез шаблона:             { value: ... }\n\nПоддерживает platform-override: platforms: { yandex: <overrideValue> }",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"templateId\": null,\n  \"fields\": {\n    \"names\": {\n      \"value\": [\n        { \"lang\": \"ru\", \"val\": \"Обновлённое название\" }\n      ],\n      \"platforms\": {\n        \"yandex\": [\n          { \"lang\": \"ru\", \"val\": \"Название для Яндекса\" }\n        ]\n      }\n    },\n    \"phones\": {\n      \"value\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    }\n  }\n}"
+        "text": "{\n  \"fields\": {\n    \"names\": {\n      \"value\": [\n        { \"lang\": \"ru\", \"val\": \"Обновлённое название\" }\n      ],\n      \"isException\": true,\n      \"platforms\": {\n        \"yandex\": [\n          { \"lang\": \"ru\", \"val\": \"Название для Яндекса\" }\n        ]\n      }\n    },\n    \"phones\": {\n      \"value\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ],\n      \"isException\": true\n    }\n  }\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -698,12 +754,15 @@
       "name": "Update Company Groups",
       "method": "PATCH",
       "url": "{{ base_url }}/companies/{{ company_id }}/groups",
-      "description": "Заменяет список групп компании целиком. Передать пустой массив — убрать из всех групп. Все groupId должны принадлежать тому же бренду что и компания.",
+      "description": "Заменяет список групп компании целиком. Передать пустой массив — убрать из всех групп.",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"groupIds\": [\"{{ group_id }}\"]\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },
@@ -717,7 +776,7 @@
       "url": "{{ base_url }}/companies/{{ company_id }}/platforms",
       "description": "Полные данные по подключениям платформ: orgId, orgName, status, isEnabled, connectedAt, lastSyncAt, syncError.",
       "body": {},
-      "headers": [],
+      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
       "parameters": [],
       "authentication": {}
     },
@@ -734,7 +793,10 @@
         "mimeType": "application/json",
         "text": "{\n  \"isEnabled\": true,\n  \"orgId\": \"123456789\",\n  \"orgName\": \"Кофейня Арома\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+      ],
       "parameters": [],
       "authentication": {}
     },

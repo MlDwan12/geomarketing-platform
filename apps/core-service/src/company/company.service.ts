@@ -635,7 +635,9 @@ export class CompanyService {
       const override = overrides[key] as FieldOverride | undefined;
       const field: Record<string, unknown> = {};
 
-      if (template === null) {
+      const isInTemplate = template !== null && key in templateFields;
+
+      if (!isInTemplate) {
         if (override?.value !== undefined) field['default'] = override.value;
         field['platforms'] = override?.platforms ?? {};
       } else {
