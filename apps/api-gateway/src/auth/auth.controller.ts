@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Patterns } from '@geo/contracts';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -36,6 +37,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const user = await sendRpc(this.coreClient, Patterns.USER_VALIDATE, {
       email: dto.email,
@@ -49,19 +52,8 @@ export class AuthController {
     req.session.userId = user.id;
     req.session.role = user.role;
     await new Promise<void>((resolve, reject) =>
-      req.session.save((err: unknown) => {
-        console.log(
-          '[LOGIN] session.save err:',
-          err,
-          'sessionID:',
-          req.sessionID,
-          'userId:',
-          req.session.userId,
-        );
-        err ? reject(err) : resolve();
-      }),
+      req.session.save((err: unknown) => (err ? reject(err) : resolve())),
     );
-    console.log('[LOGIN] response headers after save:', req.res?.getHeaders());
 
     return {
       id: user.id,
@@ -75,6 +67,8 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(201)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async register(@Body() dto: RegisterDto, @Req() req: any) {
     const user = await sendRpc(this.coreClient, Patterns.USER_CREATE, {
       name: dto.name,
@@ -101,13 +95,16 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(200)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const token = await sendRpc(this.coreClient, Patterns.PWD_RESET_CREATE, {
       email: dto.email,
     });
 
-    // TODO: заменить на отправку через mail-service
-    if (token) {
+    // TODO: заменить на отправку через mail-service.
+    // Токен печатается только в non-production (в prod это утечка секрета).
+    if (token && process.env.NODE_ENV !== 'production') {
       console.log(`[DEV] Password reset token: ${token}`);
     }
 
@@ -116,6 +113,8 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(200)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await sendRpc(this.coreClient, Patterns.PWD_RESET_CONSUME, {
       token: dto.token,

@@ -1,14 +1,11 @@
 import {
   BadRequestException,
   Body,
-  CallHandler,
   Controller,
   Delete,
-  ExecutionContext,
   Get,
   HttpCode,
   Inject,
-  NestInterceptor,
   Param,
   Patch,
   Post,
@@ -18,20 +15,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-
-class DebugBodyInterceptor implements NestInterceptor {
-  intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = ctx.switchToHttp().getRequest();
-    console.log(
-      '[DEBUG body after multer]',
-      req.body,
-      '| file:',
-      req.file?.originalname,
-    );
-    return next.handle();
-  }
-}
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import { diskStorage } from 'multer';
@@ -62,11 +45,9 @@ if (!existsSync(uploadPath)) {
 
 const logoStorage = diskStorage({
   destination: (_req, _file, cb) => {
-    console.log('MULTER DESTINATION:', uploadPath);
     cb(null, uploadPath);
   },
   filename: (_req, file, cb) => {
-    console.log('MULTER FILENAME:', file.mimetype);
     cb(null, `${crypto.randomUUID()}${mimeToExt[file.mimetype]}`);
   },
 });
@@ -75,8 +56,6 @@ const logoInterceptor = FileInterceptor('logo', {
   storage: logoStorage,
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    console.log('MULTER FILE:', file);
-
     if (!ALLOWED_MIME.test(file.mimetype)) {
       return cb(
         new BadRequestException('Допустимые форматы: jpeg, png, webp, svg'),
@@ -127,10 +106,6 @@ export class BrandsController {
     @CurrentUser() user: { userId: string },
     @Req() req: ExpressRequest,
   ) {
-    console.log('CREATE CALLED');
-    console.log('BODY:', dto);
-    console.log('LOGO:', logo);
-
     const logoUrl = logo
       ? `${req.protocol}://${req.get('host')}/uploads/${logo.filename}`
       : dto.logoUrl;

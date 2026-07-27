@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsNumberString, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumberString,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -29,6 +35,12 @@ export class EnvValidationSchema {
   @IsString()
   @IsNotEmpty()
   SESSION_SECRET?: string;
+
+  // Список разрешённых CORS origin через запятую. Пусто/не задано —
+  // gateway отражает любой origin (dev). Задать в production.
+  @IsOptional()
+  @IsString()
+  CORS_ORIGINS?: string;
 
   @IsOptional()
   @IsString()

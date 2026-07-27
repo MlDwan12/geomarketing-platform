@@ -31,24 +31,26 @@ async function bootstrap() {
     prefix: '/uploads',
   });
 
-  app.use((req: any, _res: any, next: any) => {
-    if (req.method === 'POST' || req.method === 'PATCH') {
-      console.log(
-        `[DEBUG] ${req.method} ${req.url} | content-type: ${req.headers['content-type']}`,
-      );
-    }
-    next();
-  });
-
   app.use((err, req, res, next) => {
     console.error('GLOBAL ERROR:', err);
     if ((res as any).headersSent) return;
     next(err);
   });
 
+  // CORS allowlist: если CORS_ORIGINS задан (список через запятую) — отражаем
+  // только разрешённые origin; если не задан — сохраняется прежнее поведение
+  // (отражаем любой origin), чтобы не ломать dev.
+  const corsOrigins = (configService.get<string>('CORS_ORIGINS') ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const corsAllowAll = corsOrigins.length === 0;
+
   app.use((req: any, res: any, next: any) => {
-    const origin = req.headers.origin;
-    if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+    const origin = req.headers.origin as string | undefined;
+    if (origin && (corsAllowAll || corsOrigins.includes(origin))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader(
       'Access-Control-Allow-Methods',
@@ -75,12 +77,16 @@ async function bootstrap() {
   redisClient.on('error', (err) => console.error('Redis session error:', err));
   await redisClient.connect();
 
+  const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
+  const sessionSecret = configService.get<string>('SESSION_SECRET');
+  if (!sessionSecret && nodeEnv === 'production') {
+    throw new Error('SESSION_SECRET is required in production');
+  }
+
   app.use(
     session({
       store: new RedisStore({ client: redisClient as any }),
-      secret:
-        configService.get<string>('SESSION_SECRET') ??
-        'dev-secret-change-in-prod',
+      secret: sessionSecret ?? 'dev-secret-change-in-prod',
       resave: false,
       saveUninitialized: false,
       rolling: true,
@@ -97,7 +103,9 @@ async function bootstrap() {
   // because browsers reject SameSite=None without Secure.
   app.use((req: any, _res: any, next: any) => {
     if (req.session?.cookie) {
-      const isSecure = !!(req.secure || req.headers['x-forwarded-proto'] === 'https');
+      const isSecure = !!(
+        req.secure || req.headers['x-forwarded-proto'] === 'https'
+      );
       req.session.cookie.sameSite = isSecure ? 'none' : 'lax';
     }
     next();

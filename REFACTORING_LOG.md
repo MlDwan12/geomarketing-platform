@@ -108,3 +108,71 @@
 ### Откат
 `git revert` коммита этапа, либо удалить 2 новых файла (`common/error-codes.ts`,
 `common/rpc.ts`) и вернуть inline-обёртки в перечисленных файлах.
+
+---
+
+## Этап 2 — безопасность
+Статус: **в работе (2a завершён; 2b ожидает коммит Этапа 1)**
+
+Разбит на две части из-за атомарности коммитов: 2b правит файлы, входящие в
+коммит Этапа 1 (`auth.controller.ts`, `brands.controller.ts`), поэтому выполняется
+после того, как владелец закоммитит Этап 1.
+
+### 2a — CORS-allowlist, prod-guard SESSION_SECRET, чистка debug-логов
+Статус: завершён
+
+Решения владельца:
+- SEC-001: `CORS_ORIGINS` (env), fallback — прежнее поведение (dev не ломается).
+- SEC-002: `@nestjs/throttler` на auth-эндпоинтах — выполняется в 2b.
+
+Изменённые файлы:
+- `apps/api-gateway/src/main.ts` — CORS-allowlist по `CORS_ORIGINS` (SEC-001);
+  prod-guard `SESSION_SECRET` + убран хардкод-fallback как значение по умолчанию
+  (в dev fallback сохранён) (SEC-003); удалён debug-middleware с логом content-type (SEC-004).
+- `apps/api-gateway/src/auth/guards/session.guard.ts` — удалён debug-лог
+  sessionID/cookie/userId (SEC-004).
+- `libs/config/src/env.validation.ts` — добавлен опциональный `CORS_ORIGINS`.
+- `.env.example` — документированы `CORS_ORIGINS` и обязательность `SESSION_SECRET` в prod.
+
+Что сохранено (BC):
+- CORS без `CORS_ORIGINS` ведёт себя как раньше (отражает любой origin) — dev не ломается.
+- Формат ответов, HTTP-контракты, RMQ-паттерны — без изменений.
+- В dev `SESSION_SECRET` по-прежнему опционален (fallback), guard срабатывает только в prod.
+
+Проверки:
+- TypeScript: EXIT 0. Тесты: 23/23. Сборка `nest build api-gateway`: success.
+- ESLint (api-gateway): 107 → 98 (−9; регресса нет).
+- API-контракт: изменений нет.
+
+Риски: низкие. Изменения CORS обратимо-совместимы (fallback), guard секрета активен только в prod.
+
+### 2b — чистка логов auth/brands + rate-limit
+Статус: завершён
+
+Изменённые файлы:
+- `apps/api-gateway/src/auth/auth.controller.ts` (SEC-004, SEC-002):
+  - убраны `console.log` в login (sessionID/headers), упрощён колбэк `session.save`;
+  - dev-лог токена сброса оставлен только для non-production (`NODE_ENV !== 'production'`) —
+    в prod секрет не логируется, dev-тестирование сброса сохранено (mail-service ещё нет);
+  - `@UseGuards(ThrottlerGuard)` + `@Throttle({default:{limit:10,ttl:60000}})` на
+    login/register/forgot-password/reset-password.
+- `apps/api-gateway/src/auth/auth.module.ts` (SEC-002): `ThrottlerModule.forRoot([{ttl:60000,limit:10}])`.
+- `apps/api-gateway/src/brands/brands.controller.ts` (SEC-004): удалён неиспользуемый
+  `DebugBodyInterceptor` (мёртвый код, только console.log) и его импорты; убраны MULTER/CREATE debug-логи.
+- `package.json`, `yarn.lock`: добавлена зависимость `@nestjs/throttler@6.5.0`.
+
+Что сохранено (BC):
+- HTTP-маршруты, коды, формы request/response — без изменений. Rate-limit добавляет
+  только ответ 429 при превышении на 4 публичных auth-роутах; штатные сценарии не затронуты.
+- Логи не являются публичным контрактом; удаление debug-вывода поведение API не меняет.
+
+Проверки:
+- TypeScript: EXIT 0. Тесты: 23/23. Сборка `nest build api-gateway`: success.
+- ESLint (api-gateway): 98 → 90 (−8).
+- Остаточные `console`: только легитимные (GLOBAL ERROR, Redis error, listening, dev-token под guard).
+
+Риски: низкие. Rate-limit не трогает существующие успешные сценарии; лимит 10/мин на IP.
+Runtime DI throttler проверен сборкой; функциональную проверку 429 стоит сделать при smoke-тесте стека.
+
+### Итог Этапа 2
+Статус: **завершён** (2a + 2b). Готово к коммиту одним коммитом Этапа 2.
