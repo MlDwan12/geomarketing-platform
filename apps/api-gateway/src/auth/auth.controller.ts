@@ -15,6 +15,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Patterns } from '@geo/contracts';
+import { LoggerService } from '@geo/logger';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -33,6 +34,7 @@ export class AuthController {
   constructor(
     @Inject('CORE_SERVICE')
     private readonly coreClient: ClientProxy,
+    private readonly logger: LoggerService,
   ) {}
 
   @Post('login')
@@ -105,7 +107,7 @@ export class AuthController {
     // TODO: заменить на отправку через mail-service.
     // Токен печатается только в non-production (в prod это утечка секрета).
     if (token && process.env.NODE_ENV !== 'production') {
-      console.log(`[DEV] Password reset token: ${token}`);
+      this.logger.log(`[DEV] Password reset token: ${token}`, 'AuthController');
     }
 
     return { message: 'Если аккаунт существует, письмо отправлено' };

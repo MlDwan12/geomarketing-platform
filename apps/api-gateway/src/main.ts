@@ -11,7 +11,7 @@ import { ApiGatewayModule } from './api-gateway.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
-import { RequestContext } from '@geo/logger';
+import { LoggerService, RequestContext } from '@geo/logger';
 import {
   CORRELATION_ID_HEADER,
   resolveCorrelationId,
@@ -29,6 +29,10 @@ async function bootstrap() {
       logger: ['log', 'error', 'warn', 'debug'],
     },
   );
+
+  const logger = new LoggerService();
+  app.useLogger(logger);
+
   const configService = app.get(ConfigService);
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
@@ -50,7 +54,7 @@ async function bootstrap() {
   });
 
   app.use((err, req, res, next) => {
-    console.error('GLOBAL ERROR:', err);
+    logger.error(err, 'GlobalErrorHandler');
     if ((res as any).headersSent) return;
     next(err);
   });
@@ -92,7 +96,7 @@ async function bootstrap() {
       port: Number(configService.get('REDIS_PORT') ?? 6379),
     },
   });
-  redisClient.on('error', (err) => console.error('Redis session error:', err));
+  redisClient.on('error', (err) => logger.error(err, 'RedisSession'));
   await redisClient.connect();
 
   const nodeEnv = configService.get<string>('NODE_ENV') ?? 'development';
@@ -147,6 +151,6 @@ async function bootstrap() {
 
   const port = Number(configService.get('API_GATEWAY_PORT') ?? 3000);
   await app.listen(port);
-  console.log(`api-gateway listening on port ${port}`);
+  logger.log(`api-gateway listening on port ${port}`, 'Bootstrap');
 }
 bootstrap();
