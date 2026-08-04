@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Queues } from '@geo/contracts';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { RpcExceptionFilter } from './rpc-exception.filter';
+import { CorrelationIdInterceptor } from './correlation-id.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(CoreServiceModule);
@@ -23,6 +24,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new RpcExceptionFilter());
+  app.useGlobalInterceptors(new CorrelationIdInterceptor());
 
   await app.startAllMicroservices();
 

@@ -1,5 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
+// Единое имя заголовка correlation-id — и на HTTP (api-gateway ⇄ клиент),
+// и на AMQP (api-gateway ⇄ core-service). Общее место, чтобы отправитель и
+// получатель не могли разойтись в имени заголовка между процессами.
+export const CORRELATION_ID_HEADER = 'x-correlation-id';
+
 interface Store {
   correlationId: string;
 }

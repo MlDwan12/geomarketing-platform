@@ -1,11 +1,7 @@
 import { of } from 'rxjs';
 import { ClientProxy, RmqRecord } from '@nestjs/microservices';
-import { RequestContext } from '@geo/logger';
-import {
-  CORRELATION_ID_AMQP_HEADER,
-  DEFAULT_RPC_TIMEOUT,
-  sendRpc,
-} from './rpc';
+import { CORRELATION_ID_HEADER, RequestContext } from '@geo/logger';
+import { DEFAULT_RPC_TIMEOUT, sendRpc } from './rpc';
 
 function fakeClient(result: unknown = { ok: true }) {
   return { send: jest.fn().mockReturnValue(of(result)) };
@@ -40,9 +36,7 @@ describe('sendRpc — correlation-id propagation', () => {
     expect(pattern).toBe('some.pattern');
     expect(message).toBeInstanceOf(RmqRecord);
     expect(message.data).toEqual(payload);
-    expect(message.options?.headers?.[CORRELATION_ID_AMQP_HEADER]).toBe(
-      'req-42',
-    );
+    expect(message.options?.headers?.[CORRELATION_ID_HEADER]).toBe('req-42');
   });
 
   it('результат RPC-вызова по-прежнему возвращается вызывающему коду', async () => {

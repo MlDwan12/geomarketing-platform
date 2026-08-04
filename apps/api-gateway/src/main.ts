@@ -11,11 +11,12 @@ import { ApiGatewayModule } from './api-gateway.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
-import { LoggerService, RequestContext } from '@geo/logger';
 import {
   CORRELATION_ID_HEADER,
-  resolveCorrelationId,
-} from './common/correlation-id';
+  LoggerService,
+  RequestContext,
+} from '@geo/logger';
+import { resolveCorrelationId } from './common/correlation-id';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const session = require('express-session');
