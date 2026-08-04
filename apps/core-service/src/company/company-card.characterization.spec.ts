@@ -30,8 +30,9 @@ type PureMethods = {
 };
 
 function svc(): PureMethods {
-  // Восемь репозиториев + DataSource; тестируемые методы их не используют.
-  const deps = Array(9).fill(null) as unknown[];
+  // 6 репозиториев + DataSource + CompanyAccessService + 3 под-сервиса (Этап 4.1/4.2);
+  // тестируемые чистые методы их не используют.
+  const deps = Array(11).fill(null) as unknown[];
   const Ctor = CompanyService as unknown as new (
     ...args: unknown[]
   ) => CompanyService;
