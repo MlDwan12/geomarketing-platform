@@ -2,8 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
-import { Company } from './company.entity';
-import { CompanyPlatform, PlatformStatus } from './company-platform.entity';
+import { Company } from '../entities/company.entity';
+import {
+  CompanyPlatform,
+  PlatformStatus,
+} from '../entities/company-platform.entity';
 import { CompanyAccessService } from './company-access.service';
 
 @Injectable()

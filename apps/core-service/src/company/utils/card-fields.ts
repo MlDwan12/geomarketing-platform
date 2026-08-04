@@ -2,8 +2,8 @@ import {
   CompanyDefault,
   FieldOverride,
   FieldOverrides,
-} from './company-default.entity';
-import { CompanyTemplate } from './company-template.entity';
+} from '../entities/company-default.entity';
+import { CompanyTemplate } from '../entities/company-template.entity';
 
 // Мультиязычные поля мержатся по языку (а не заменяются целиком) при platform-override.
 export const LANG_MERGE_FIELDS = new Set([

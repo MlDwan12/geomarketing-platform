@@ -3,17 +3,23 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Not, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
-import { Company, CompanyStatus } from './company.entity';
-import { CompanyDefault, FieldOverrides } from './company-default.entity';
-import { CompanyTemplate } from './company-template.entity';
-import { CompanyPlatform, PlatformStatus } from './company-platform.entity';
-import { CompanyGroup } from './company-group.entity';
-import { CompanyGroupMember } from './company-group-member.entity';
+import { Company, CompanyStatus } from '../entities/company.entity';
+import {
+  CompanyDefault,
+  FieldOverrides,
+} from '../entities/company-default.entity';
+import { CompanyTemplate } from '../entities/company-template.entity';
+import {
+  CompanyPlatform,
+  PlatformStatus,
+} from '../entities/company-platform.entity';
+import { CompanyGroup } from '../entities/company-group.entity';
+import { CompanyGroupMember } from '../entities/company-group-member.entity';
 import {
   assembleCardFields as assembleCardFieldsFn,
   resolveForPlatform as resolveForPlatformFn,
-} from './card-fields';
-import { slugify as slugifyFn } from './slug.util';
+} from '../utils/card-fields';
+import { slugify as slugifyFn } from '../utils/slug.util';
 import { CompanyAccessService } from './company-access.service';
 import { CompanyTemplateService } from './company-template.service';
 import { CompanyGroupService } from './company-group.service';

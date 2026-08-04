@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
-import { CompanyService } from './company.service';
-import { FieldOverrides } from './company-default.entity';
-import { CompanyStatus } from './company.entity';
-import { PlatformStatus } from './company-platform.entity';
+import { CompanyService } from './services/company.service';
+import { FieldOverrides } from './entities/company-default.entity';
+import { CompanyStatus } from './entities/company.entity';
+import { PlatformStatus } from './entities/company-platform.entity';
 
 @Controller()
 export class CompanyController {

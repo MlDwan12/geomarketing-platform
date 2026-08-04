@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Company } from './company.entity';
-import { CompanyDefault } from './company-default.entity';
-import { CompanyTemplate } from './company-template.entity';
-import { CompanyPlatform } from './company-platform.entity';
-import { CompanyGroup } from './company-group.entity';
-import { CompanyGroupMember } from './company-group-member.entity';
+import { Company } from './entities/company.entity';
+import { CompanyDefault } from './entities/company-default.entity';
+import { CompanyTemplate } from './entities/company-template.entity';
+import { CompanyPlatform } from './entities/company-platform.entity';
+import { CompanyGroup } from './entities/company-group.entity';
+import { CompanyGroupMember } from './entities/company-group-member.entity';
 import { UserBrand } from '../brand/user-brand.entity';
 import { CompanyController } from './company.controller';
-import { CompanyService } from './company.service';
-import { CompanyAccessService } from './company-access.service';
-import { CompanyTemplateService } from './company-template.service';
-import { CompanyGroupService } from './company-group.service';
-import { CompanyPlatformService } from './company-platform.service';
+import { CompanyService } from './services/company.service';
+import { CompanyAccessService } from './services/company-access.service';
+import { CompanyTemplateService } from './services/company-template.service';
+import { CompanyGroupService } from './services/company-group.service';
+import { CompanyPlatformService } from './services/company-platform.service';
 
 @Module({
   imports: [

@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, In, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
-import { Company } from './company.entity';
-import { CompanyGroup } from './company-group.entity';
-import { CompanyGroupMember } from './company-group-member.entity';
+import { Company } from '../entities/company.entity';
+import { CompanyGroup } from '../entities/company-group.entity';
+import { CompanyGroupMember } from '../entities/company-group-member.entity';
 import { CompanyAccessService } from './company-access.service';
 
 @Injectable()

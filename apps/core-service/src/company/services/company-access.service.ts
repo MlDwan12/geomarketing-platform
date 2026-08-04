@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
-import { Company, CompanyStatus } from './company.entity';
-import { UserBrand } from '../brand/user-brand.entity';
+import { Company, CompanyStatus } from '../entities/company.entity';
+import { UserBrand } from '../../brand/user-brand.entity';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
