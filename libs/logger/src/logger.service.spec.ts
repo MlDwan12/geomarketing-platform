@@ -1,4 +1,5 @@
 import { LoggerService } from './logger.service';
+import { RequestContext } from './request-context';
 
 function lastWrite(
   spy: jest.SpiedFunction<typeof process.stdout.write>,
@@ -83,6 +84,22 @@ describe('LoggerService (structured JSON output)', () => {
     expect(record['message']).toBe('failed');
     expect(record['trace']).toBe('at foo.ts:10');
     expect(record['context']).toBe('RpcException');
+  });
+
+  it('без активного RequestContext — correlationId отсутствует в записи', () => {
+    const logger = new LoggerService();
+    logger.log('started');
+
+    const record = lastWrite(stdout);
+    expect(record['correlationId']).toBeUndefined();
+  });
+
+  it('внутри RequestContext.run() — correlationId подмешивается в запись', () => {
+    const logger = new LoggerService();
+    RequestContext.run('req-1', () => logger.log('started'));
+
+    const record = lastWrite(stdout);
+    expect(record['correlationId']).toBe('req-1');
   });
 
   it.each(['warn', 'debug', 'verbose'] as const)(

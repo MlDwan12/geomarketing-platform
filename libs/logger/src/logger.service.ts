@@ -1,4 +1,5 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
+import { RequestContext } from './request-context';
 
 type Level = 'log' | 'error' | 'warn' | 'debug' | 'verbose';
 
@@ -59,11 +60,14 @@ export class LoggerService implements NestLoggerService {
       meta['stack'] = message.stack;
     }
 
+    const correlationId = RequestContext.getCorrelationId();
+
     const record: Record<string, unknown> = {
       timestamp: new Date().toISOString(),
       level,
       ...(context !== undefined ? { context } : {}),
       message: this.formatMessage(message),
+      ...(correlationId !== undefined ? { correlationId } : {}),
       ...meta,
     };
 
