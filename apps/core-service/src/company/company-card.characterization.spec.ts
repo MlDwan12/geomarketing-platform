@@ -92,6 +92,16 @@ describe('CompanyService.resolveForPlatform (characterization)', () => {
     );
     expect(result).toEqual({ phone: 'T' });
   });
+
+  it('isException не задан (undefined) — override всё равно побеждает над template', () => {
+    const s = svc();
+    const result = s.resolveForPlatform(
+      'yandex',
+      { phone: 'T' },
+      { phone: { value: 'C' } },
+    );
+    expect(result).toEqual({ phone: 'C' });
+  });
 });
 
 describe('CompanyService.assembleCardFields (characterization)', () => {
@@ -150,6 +160,17 @@ describe('CompanyService.assembleCardFields (characterization)', () => {
     expect(result).toEqual({
       phone: { isException: false, default: 'T', platforms: {} },
       email: { default: 'X', platforms: {} },
+    });
+  });
+
+  it('БАГ (ARCH-003, Этап 5.1 — до фикса): isException не задан + шаблон есть → default берётся из шаблона, override.value ТЕРЯЕТСЯ. Расходится с resolveForPlatform (см. тест выше), который в том же входе отдаёт override. Фикс — в Этапе 5.2.', () => {
+    const s = svc();
+    const result = s.assembleCardFields(
+      { fieldOverrides: { phone: { value: 'C' } } },
+      { fields: { phone: { default: 'T' } } },
+    );
+    expect(result).toEqual({
+      phone: { isException: false, default: 'T', platforms: {} },
     });
   });
 });
