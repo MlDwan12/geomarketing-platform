@@ -11,6 +11,11 @@ import { ApiGatewayModule } from './api-gateway.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
+import { RequestContext } from '@geo/logger';
+import {
+  CORRELATION_ID_HEADER,
+  resolveCorrelationId,
+} from './common/correlation-id';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const session = require('express-session');
@@ -29,6 +34,19 @@ async function bootstrap() {
 
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads',
+  });
+
+  // Correlation-id: переиспользуем клиентский заголовок или генерируем новый,
+  // держим его в AsyncLocalStorage на время запроса (см. libs/logger) и
+  // возвращаем тем же заголовком в ответе. Регистрируется первым, чтобы весь
+  // последующий код запроса (CORS, сессии, обработчики ошибок, контроллеры)
+  // выполнялся внутри этого контекста.
+  app.use((req: any, res: any, next: any) => {
+    const correlationId = resolveCorrelationId(
+      req.headers[CORRELATION_ID_HEADER],
+    );
+    res.setHeader(CORRELATION_ID_HEADER, correlationId);
+    RequestContext.run(correlationId, next);
   });
 
   app.use((err, req, res, next) => {
