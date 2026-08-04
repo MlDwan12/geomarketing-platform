@@ -16,6 +16,16 @@ export const LANG_MERGE_FIELDS = new Set([
 
 export type LangItem = { lang: string; val: string };
 
+// Единое правило приоритета (ARCH-003): true, если хранимое значение override
+// должно перебить значение шаблона для базового (не platform-specific) значения.
+// Override побеждает, если у него задано value и isException не выставлен явно
+// в false. isException:undefined ТОЖЕ считается победой override — override
+// пишется только когда пользователь явно задал значение (см. company-default.entity.ts),
+// поэтому отсутствие isException не должно трактоваться как «используй шаблон».
+function overrideHasPriority(override: FieldOverride | undefined): boolean {
+  return override?.value !== undefined && override?.isException !== false;
+}
+
 // Итоговые плоские значения полей для конкретной платформы.
 // Приоритет: platform override → company value → template value.
 export function resolveForPlatform(
@@ -35,8 +45,8 @@ export function resolveForPlatform(
 
     // Base value priority: company value (no template) → exception override → template
     let baseValue: unknown;
-    if (override?.value !== undefined && override?.isException !== false) {
-      baseValue = override.value;
+    if (overrideHasPriority(override)) {
+      baseValue = override!.value;
     } else if (templateValue !== undefined) {
       baseValue = templateValue;
     }
@@ -93,9 +103,12 @@ export function assembleCardFields(
       const templateValue = (
         templateFields[key] as { default?: unknown } | undefined
       )?.default;
-      if (override?.isException) {
+      // override?.isException — сохраняет прежнее поведение для isException:true
+      // без value (legacy-форма, значение только в platforms). overrideHasPriority —
+      // фикс Этапа 5.2: isException не задан больше не трактуется как «нет override».
+      if (override?.isException || overrideHasPriority(override)) {
         field['isException'] = true;
-        if (override.value !== undefined) field['default'] = override.value;
+        if (override?.value !== undefined) field['default'] = override.value;
       } else {
         field['isException'] = false;
         if (templateValue !== undefined) field['default'] = templateValue;

@@ -163,14 +163,14 @@ describe('CompanyService.assembleCardFields (characterization)', () => {
     });
   });
 
-  it('БАГ (ARCH-003, Этап 5.1 — до фикса): isException не задан + шаблон есть → default берётся из шаблона, override.value ТЕРЯЕТСЯ. Расходится с resolveForPlatform (см. тест выше), который в том же входе отдаёт override. Фикс — в Этапе 5.2.', () => {
+  it('ФИКС (ARCH-003, Этап 5.2): isException не задан + шаблон есть → override.value побеждает (как в resolveForPlatform выше), а не default из шаблона', () => {
     const s = svc();
     const result = s.assembleCardFields(
       { fieldOverrides: { phone: { value: 'C' } } },
       { fields: { phone: { default: 'T' } } },
     );
     expect(result).toEqual({
-      phone: { isException: false, default: 'T', platforms: {} },
+      phone: { isException: true, default: 'C', platforms: {} },
     });
   });
 });
