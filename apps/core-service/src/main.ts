@@ -3,8 +3,6 @@ import { CoreServiceModule } from './core-service.module';
 import { ConfigService } from '@nestjs/config';
 import { Queues } from '@geo/contracts';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { RpcExceptionFilter } from './rpc-exception.filter';
-import { CorrelationIdInterceptor } from './correlation-id.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(CoreServiceModule);
@@ -12,19 +10,25 @@ async function bootstrap() {
   const port = Number(configService.get('CORE_SERVICE_PORT')) || 3001;
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [rabbitmqUrl!],
-      queue: Queues.CORE,
-      queueOptions: {
-        durable: true,
+  app.connectMicroservice<MicroserviceOptions>(
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: [rabbitmqUrl!],
+        queue: Queues.CORE,
+        queueOptions: {
+          durable: true,
+        },
       },
     },
-  });
-
-  app.useGlobalFilters(new RpcExceptionFilter());
-  app.useGlobalInterceptors(new CorrelationIdInterceptor());
+    // Без inheritAppConfig:true connectMicroservice() создаёт отдельный,
+    // пустой ApplicationConfig для микросервиса — глобальные enhancer'ы
+    // (RpcExceptionFilter/CorrelationIdInterceptor, зарегистрированные в
+    // CoreServiceModule через APP_FILTER/APP_INTERCEPTOR) до него не
+    // доходят. Подтверждено живым smoke-тестом: без этого флага фильтр и
+    // интерсептор ни разу не вызывались на реальном RMQ-запросе.
+    { inheritAppConfig: true },
+  );
 
   await app.startAllMicroservices();
 
