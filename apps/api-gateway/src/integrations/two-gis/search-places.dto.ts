@@ -48,12 +48,14 @@ export class SearchPlacesDto {
   @Min(1)
   page: number = 1;
 
+  // 2ГИС реально ограничивает page_size значением 1-10 (проверено живым
+  // запросом), несмотря на то, что раньше здесь стоял @Max(50)/дефолт 20.
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
-  pageSize: number = 20;
+  @Max(10)
+  pageSize: number = 10;
 
   // ?fields=point,contact_groups,schedule — через запятую, без префикса items.
   @IsOptional()

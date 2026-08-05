@@ -39,7 +39,7 @@ describe('TwoGisPlacesService.searchPlaces', () => {
     expect(url.searchParams.get('key')).toBe('my-key');
     expect(url.searchParams.get('locale')).toBe('ru_RU');
     expect(url.searchParams.get('page')).toBe('1');
-    expect(url.searchParams.get('page_size')).toBe('20');
+    expect(url.searchParams.get('page_size')).toBe('10');
     expect(url.searchParams.has('location')).toBe(false);
     expect(url.searchParams.has('region_id')).toBe(false);
     expect(url.searchParams.has('fields')).toBe(false);

@@ -84,7 +84,10 @@ export class TwoGisPlacesService {
       url.searchParams.set('region_id', String(params.regionId));
     }
     url.searchParams.set('page', String(params.page ?? 1));
-    url.searchParams.set('page_size', String(params.pageSize ?? 20));
+    // 2ГИС реально ограничивает page_size значением 1-10 (проверено живым
+    // запросом: page_size=20 → "Length of parameter 'page_size' should be
+    // from 1 to 10"), несмотря на то, что раньше в коде был дефолт 20.
+    url.searchParams.set('page_size', String(params.pageSize ?? 10));
     if (params.fields?.length) {
       url.searchParams.set(
         'fields',
