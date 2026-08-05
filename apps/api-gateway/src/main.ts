@@ -7,6 +7,7 @@ import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import type { NextFunction, Request, Response } from 'express';
 import { ApiGatewayModule } from './api-gateway.module';
 import { RpcExceptionFilter } from './filters/rpc-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
@@ -54,9 +55,9 @@ async function bootstrap() {
     RequestContext.run(correlationId, next);
   });
 
-  app.use((err, req, res, next) => {
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     logger.error(err, 'GlobalErrorHandler');
-    if ((res as any).headersSent) return;
+    if (res.headersSent) return;
     next(err);
   });
 

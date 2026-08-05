@@ -334,3 +334,83 @@ override — то есть ответ API карточки и значение, 
 `PATCH /default`) — по коду это уже было некорректно, фикс приводит `assembleCardFields`
 в соответствие с тем, что реально уходит в синк. Живой smoke на затронутый сценарий не
 прогонялся (нет доступа к dev-БД в этой сессии — Docker daemon не был запущен).
+
+---
+
+## Этап 7 — частичный strict TS (TS-001)
+Статус: **завершён** (вариант A из карточки TS-001, частично: `noImplicitAny` + `strictBindCallApply`)
+
+Включены `"noImplicitAny": true` и `"strictBindCallApply": true` в корневом `tsconfig.json`
+(были `false`). Проверка (`tsc --noEmit` с этими флагами до правки кода) показала всего
+4 ошибки implicit any — все на одной строке: обработчик ошибок Express в
+`apps/api-gateway/src/main.ts` (`app.use((err, req, res, next) => ...)`), единственное
+место в монорепо без явной типизации параметров под этими флагами.
+
+Фикс: параметры типизированы через `@types/express` (уже был в зависимостях) —
+`(err: Error, req: Request, res: Response, next: NextFunction)`. Заодно убран
+`(res as any).headersSent` → `res.headersSent` (типы уже это позволяют), что попутно
+сняло один старый `no-unnecessary-type-assertion` из линта.
+
+Полный `strict` (остальные под-флаги: `strictNullChecks` уже был включён,
+`noImplicitThis`/`alwaysStrict`/`strictFunctionTypes`/`strictPropertyInitialization` —
+не включались, не входили в согласованный скоуп этой сессии) — не тронут, остаётся
+открытым пунктом при желании продолжить TS-001 дальше.
+
+Проверки: `tsc --noEmit -p tsconfig.json` — 0 ошибок; `yarn test` — 71/71; `nest build`
+для всех 6 приложений (api-gateway, core-service, integration-service, map-parser,
+review-service, ai-service) — success; `eslint` на изменённых файлах — было 20 проблем
+(17 ошибок, 3 предупреждения) до правки, стало 19 (15 ошибок, 4 предупреждения) —
+остаток тот же баланс `no-unsafe-*` от предсуществующих `any`-параметров в других
+middleware того же файла (вне скоупа: они не implicit any, а явный `: any`, флагами
+этого этапа не покрываются).
+
+Риски: минимальные. Диапазон изменений — один файл кода (`main.ts`) + `tsconfig.json`.
+BC HTTP-API не затронуто (чисто типизация, поведение обработчика не изменилось).
+
+---
+
+## 2026-08-05 — интеграция Яндекс Geosearch API (только поиск/превью, вне плановых Этапов 0-7)
+Статус: **завершён**
+
+По аналогии с ранее сделанным `TwoGisPlacesService` (2ГИС Places API): тонкий клиент к
+`search-maps.yandex.ru/v1` (Яндекс Geosearch API, официальный, ключ из Кабинета
+Разработчика). Только поиск/превью организаций (`type=biz`) — без записи/синка в Яндекс
+(это отдельная и более тяжёлая задача: официального REST-API для записи карточек нет,
+только партнёрская XML-выгрузка в Яндекс.Справочник, либо Playwright через map-parser —
+обсуждено с пользователем, отложено на потом).
+
+**integration-service** (`src/yandex/`): `YandexPlacesService.searchPlaces` — строит URL
+(`text`, `apikey`, `lang` по умолчанию `ru_RU`, `type=biz`, `ll`/`spn`/`results`/`skip`
+опционально), парсит GeoJSON-ответ (`features[].properties.CompanyMetaData`), ошибки HTTP
+(`!res.ok`) → `RpcException`. Форма ответа не переименовывается (как и у 2ГИС) — поля
+Яндекса как есть. В отличие от 2ГИС, не найдено задокументированного или подтверждённого
+живым запросом кейса "HTTP 200 + ошибка внутри тела" — поэтому не добавлялась аналогичная
+проверка `meta.code`, которая была у 2ГИС (там она была введена по факту найденного в живую
+поведения, здесь такого разбора не было, живой ключ Яндекса недоступен в этой сессии).
+`YandexController` — `MessagePattern(Patterns.YANDEX_PLACES_SEARCH)`, пустой query → 400.
+`YandexModule`, подключён в `IntegrationServiceModule`.
+
+**api-gateway** (`src/integrations/`): `GET /integrations/yandex/places?q=&ll=lon,lat&spn=&results=&skip=`
+(`SessionGuard`), `SearchYandexPlacesDto` с валидацией формата `ll`/`spn` ("lon,lat"),
+`YandexPlacesController` → RPC в integration-service. `YandexPlacesModule`, подключён в
+`ApiGatewayModule`.
+
+**Контракты:** `Patterns.YANDEX_PLACES_SEARCH = 'yandex.places.search'` в `libs/contracts`.
+
+**Конфиг:** `.env.example` — секция `YANDEX_GEOSEARCH_API_KEY` (ключ из
+https://developer.tech.yandex.ru/). В реальный `.env` ключ не прописывался (нет доступа,
+делает пользователь сам).
+
+Тесты: 10 новых (6 сервис + 3 контроллер + учтено в общем прогоне), 81/81 всего (было 71).
+Проверки: `tsc --noEmit` — 0 ошибок; `nest build integration-service` и `nest build
+api-gateway` — success; eslint на изменённых файлах — 0 новых проблем (один файл спека
+пришлось прогнать через точечный `prettier --write`, т.к. форматирование строки не
+совпало с правилами репозитория — тот же приём, что и раньше: prettier только на
+изменённом файле, не глобально).
+
+Живой smoke не проводился — нет живого `YANDEX_GEOSEARCH_API_KEY` в этой сессии.
+Рекомендация: перед реальным использованием получить ключ в Кабинете Разработчика и
+пройти ручной запрос `GET /integrations/yandex/places?q=...` через поднятый стек.
+
+Риски: минимальные, новый изолированный модуль, существующие контракты не менялись, BC
+HTTP-API api-gateway не затронуто (новый эндпоинт, не модификация существующего).
