@@ -12,6 +12,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { GroupsModule } from './groups/groups.module';
 import { TwoGisImportModule } from './import/two-gis-import.module';
 import { TwoGisPlacesModule } from './integrations/two-gis-places.module';
+import { YandexPlacesModule } from './integrations/yandex-places.module';
 import { UploadModule } from './upload/upload.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { UploadModule } from './upload/upload.module';
     TemplatesModule,
     TwoGisImportModule,
     TwoGisPlacesModule,
+    YandexPlacesModule,
     UploadModule,
   ],
   controllers: [ApiGatewayController],

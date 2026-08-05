@@ -70,6 +70,9 @@ export const Patterns = {
 
   // Integrations — 2GIS Places API (catalog.api.2gis.com/3.0/items)
   TWOGIS_PLACES_SEARCH: 'twogis.places.search', // { query, location?, regionId?, page?, pageSize? } → { items, total }
+
+  // Integrations — Yandex Geosearch API (search-maps.yandex.ru/v1)
+  YANDEX_PLACES_SEARCH: 'yandex.places.search', // { query, ll?, spn?, results?, skip? } → { items, total }
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
