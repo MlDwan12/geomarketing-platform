@@ -97,6 +97,9 @@ export class TwoGisImportController {
           addressDisplay: branch.address_name ?? branch.address ?? null,
           rating: catalog?.reviews?.general_rating ?? null,
           reviewCount: catalog?.reviews?.general_review_count ?? 0,
+          coordinates: catalog?.point
+            ? ([catalog.point.lon, catalog.point.lat] as [number, number])
+            : null,
           fieldOverrides: catalog
             ? this.mapCatalogToFieldOverrides(catalog)
             : undefined,
@@ -179,6 +182,9 @@ export class TwoGisImportController {
             addressDisplay: branch.address_name ?? branch.address ?? null,
             rating: catalog?.reviews?.general_rating ?? null,
             reviewCount: catalog?.reviews?.general_review_count ?? 0,
+            coordinates: catalog?.point
+              ? ([catalog.point.lon, catalog.point.lat] as [number, number])
+              : null,
             fieldOverrides: catalog
               ? this.mapCatalogToFieldOverrides(catalog)
               : undefined,

@@ -38,6 +38,11 @@ export class Company {
   @Column({ type: 'text', nullable: true })
   addressDisplay: string | null;
 
+  // [lon, lat] — для MapVisibility-сопоставления с публичным поиском 2ГИС/Яндекс.
+  // Заполняется при 2ГИС-импорте (catalog.point); старые записи — null.
+  @Column({ type: 'jsonb', nullable: true })
+  coordinates: [number, number] | null;
+
   @Column({ type: 'numeric', precision: 3, scale: 1, nullable: true })
   rating: number | null;
 

@@ -18,6 +18,13 @@ export class CompanyController {
     return this.companyService.list(brandId, userId, page, limit);
   }
 
+  @MessagePattern(Patterns.COMPANY_LIST_FOR_VISIBILITY)
+  listForVisibility(
+    @Payload() { brandId, userId }: { brandId: string; userId: string },
+  ) {
+    return this.companyService.listForVisibility(brandId, userId);
+  }
+
   @MessagePattern(Patterns.COMPANY_GET)
   get(@Payload() { companyId, brandId, userId }: { companyId: string; brandId: string; userId: string }) {
     return this.companyService.get(companyId, userId, brandId);

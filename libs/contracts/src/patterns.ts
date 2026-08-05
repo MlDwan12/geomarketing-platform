@@ -21,6 +21,7 @@ export const Patterns = {
 
   // Companies
   COMPANY_LIST:                    'company.list',
+  COMPANY_LIST_FOR_VISIBILITY:     'company.listForVisibility',
   COMPANY_GET:                     'company.get',
   COMPANY_CREATE:                  'company.create',
   COMPANY_FIND_BY_TWOGIS_ORG_ID:   'company.findByTwoGisOrgId',
@@ -76,6 +77,9 @@ export const Patterns = {
 
   // Integrations — объединённый поиск по 2ГИС + Яндекс с дедупликацией
   PLACES_SEARCH: 'places.search', // { query, location? } → { items, total, failedSources }
+
+  // Integrations — проверка MapVisibility существующих Company на 2ГИС/Яндекс
+  MAP_VISIBILITY_CHECK: 'mapVisibility.check', // { companies: CompanyRef[] } → MapVisibilityResult[]
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

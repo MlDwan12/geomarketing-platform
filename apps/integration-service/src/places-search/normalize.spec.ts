@@ -118,6 +118,21 @@ describe('dedupePlaces', () => {
     expect(dedupePlaces([a, b])).toHaveLength(1);
   });
 
+  it('2ГИС дописывает категорию в name ("Кафе Пушкинъ, ресторан русской кухни") — всё равно мержится по префиксу с чистым названием от Яндекса (проверено живым запросом)', () => {
+    const a = place({
+      name: 'Кафе Пушкинъ, ресторан русской кухни',
+      coordinates: [37.605129, 55.763711],
+      sources: [{ provider: '2gis', id: '1', raw: {} }],
+    });
+    const b = place({
+      name: 'Кафе Пушкинъ',
+      coordinates: [37.60493, 55.763722],
+      sources: [{ provider: 'yandex', id: '2', raw: {} }],
+    });
+
+    expect(dedupePlaces([a, b])).toHaveLength(1);
+  });
+
   it('далёкие координаты (>150м) — не мержит, даже если название совпадает и провайдеры разные', () => {
     const a = place({
       name: 'Кафе Солнышко',

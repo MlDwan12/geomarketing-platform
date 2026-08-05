@@ -504,3 +504,119 @@ RPC в integration-service.
 
 Риски: минимальные, узкий числовой фикс в двух местах, приводит поведение в
 соответствие с реальным лимитом внешнего API.
+
+---
+
+## 2026-08-05 — fix: 2ГИС-импорт терял addressDisplay/rating/reviewCount/card
+Статус: **завершён**
+
+Найдено при проектировании MapVisibility-фичи (см. CONTEXT.md), не входит в её скоуп —
+отдельный преэкзистинг баг, обнаружен по пути.
+
+`TwoGisImportController.import()`/`.sync()` отправляли в `Patterns.COMPANY_CREATE`
+`addressDisplay`, `rating`, `reviewCount`, `card` (адрес/рейтинг/телефоны/категории/часы
+работы из 2ГИС), но `CompanyService.create()` их не читал вообще — тип `dto` не включал
+эти поля, `Company` всегда создавалась с `addressDisplay: null, rating: null,
+reviewCount: 0`, а `card` нигде не использовался. С момента написания импорта (в этой
+сессии не менялось) эти данные молча терялись при каждом импорте из 2ГИС.
+
+Фикс:
+- `CompanyService.create()` — `dto` принял `addressDisplay?`, `rating?`, `reviewCount?`,
+  значения пишутся в `Company` вместо хардкода null/0.
+- `card` — отдельного параметра для этого в `create()` нет и не появилось: у `dto` уже
+  был `fieldOverrides` (форма `Record<field, { value }>`, см.
+  `company-default.entity.ts`), просто `TwoGisImportController` его не заполнял.
+  Добавлен `mapCatalogToFieldOverrides()` — оборачивает значения `mapCatalogToCard()`
+  (не переименовывая сами поля 2ГИС) в форму `{ value }`; оба места вызова
+  `COMPANY_CREATE` теперь шлют `fieldOverrides` вместо ad-hoc `card`.
+
+Проверки: `tsc --noEmit` — 0; `yarn test` — 102/102 (характеризационных тестов на
+`create()` не было, регрессировать было нечему); `nest build` core-service +
+api-gateway — success; eslint на изменённых файлах — 12 проблем, все преэкзистинг
+(`sendRpc` без типа даёт `no-unsafe-*` по всему файлу, подтверждено сравнением до/после
+через `git stash`) — не новые.
+
+Живой smoke не проводился — нет доступа к БД в момент фикса. Рекомендация: после
+следующего живого 2ГИС-импорта проверить, что `addressDisplay`/`rating`/`reviewCount` и
+карточка (телефоны/категории/часы работы) реально появляются у созданной Company.
+
+Риски: минимальные — раньше эти поля были всегда пустыми, теперь заполняются реальными
+данными 2ГИС. BC не нарушено (это не было рабочим поведением, это было багом).
+
+---
+
+## 2026-08-05 — MapVisibility: проверка присутствия Company на 2ГИС/Яндекс (аудит существующих)
+Статус: **завершён**
+
+Первая часть roadmap-приоритета №1 (см. project_product_direction в памяти пользователя) —
+ветка "аудит/выгрузка существующих" из двух веток онбординга сети, зафиксированных в
+CONTEXT.md 2026-08-05. Ветка "создать и опубликовать" (write-sync) осталась TODO — не в
+этом скоупе, механизм не выбран.
+
+**Домен-моделирование (интервью с пользователем, см. CONTEXT.md):** новые термины
+AccountListing (карточка заведена в личном кабинете клиента, авторизованный доступ) и
+MapVisibility (карточка видна в публичном поиске, наш случай) — сознательно разные факты,
+отдельные от CompanyPlatform.status (наше внутреннее подключение). Реализована только
+MapVisibility — для AccountListing нужен авторизованный доступ к аккаунту, у Яндекса такого
+нет вообще, у 2ГИС есть (TwoGisAccountService), но это отдельная задача.
+
+**core-service:**
+- Миграция `AddCompanyCoordinates1750000007000` — `Company.coordinates` (`[lon, lat]`,
+  nullable jsonb). Применена на dev-БД, проверена (`\d companies`).
+- `TwoGisImportController` (`import()`/`sync()`) теперь передаёт `coordinates` из
+  `catalog.point` в `COMPANY_CREATE` — раньше эти данные были доступны, но терялись
+  (см. отдельный коммит с багом addressDisplay/rating/reviewCount/card тем же вечером).
+- Новый паттерн `COMPANY_LIST_FOR_VISIBILITY` — без пагинации, только
+  `id/name/addressDisplay/coordinates` по `brandId`, для проверки всей сети разом
+  (существующий `COMPANY_LIST` пагинирован, не годится для bulk-аудита).
+
+**integration-service:**
+- `src/common/geo-match.ts` — общие примитивы (`haversineMeters`, `nameSimilarity`,
+  `normalizePhoneDigits`, новое — `namesLikelyMatch`), вынесены из
+  `places-search/normalize.ts` (чистый рефакторинг, поведение не менялось, тесты те же).
+- **`namesLikelyMatch` — фикс, найденный живым сопоставлением:** 2ГИС дописывает категорию
+  в `name` ("Кафе Пушкинъ, ресторан русской кухни"), из-за чего Левенштейн-схожесть с
+  чистым "Кафе Пушкинъ" от Яндекса падала ниже порога и совпадения не находились — ни в
+  дедупе объединённого поиска (уже закоммиченного, `ce7c7e4`), ни в новой проверке
+  MapVisibility. Фикс — доп. условие по префиксу (граница по пробелу), применили в обоих
+  местах. Обнаружено и согласовано с пользователем через живой запрос ДО фикса, не после.
+- `src/map-visibility/` — новый модуль:
+  `visibility-match.ts` (`matchesCompany` — политика мягче, чем дедуп-`isDuplicate`: если
+  у Company нет координат — совпадение по тексту названия+адреса с `confidence: low`,
+  вместо отказа; результат идёт человеку на подтверждение, не в авто-мёрдж);
+  `map-visibility.service.ts` (`MapVisibilityService.checkVisibility` — батчи по 5 компаний
+  параллельно, per-provider поиск через уже существующие `TwoGisPlacesService`/
+  `YandexPlacesService`, partial-success на уровне провайдера — `error` в `ProviderVisibility`
+  не валит всю проверку); контроллер на `Patterns.MAP_VISIBILITY_CHECK`; модуль подключён в
+  `IntegrationServiceModule`.
+- `TwoGisModule`/`YandexModule` — добавлен `exports:` (нужно для переиспользования в новом
+  модуле, как уже было сделано для `PlacesSearchModule`).
+
+**api-gateway:** `GET /company-visibility/check` (`x-brand-id`, `SessionGuard`) — новый
+модуль `company-visibility/` (не внутри `companies/`, т.к. нужны оба клиента CORE_SERVICE+
+INTEGRATION_SERVICE). Оркестрирует `COMPANY_LIST_FOR_VISIBILITY` → `MAP_VISIBILITY_CHECK`,
+таймаут увеличен до 30с (сеть в 50 точек × 2 провайдера батчами — может занять десятки
+секунд).
+
+**Контракты:** `Patterns.COMPANY_LIST_FOR_VISIBILITY`, `Patterns.MAP_VISIBILITY_CHECK`.
+
+Тесты: 15 новых (`visibility-match.spec.ts` — 9, `map-visibility.service.spec.ts` — 5,
++1 регрессионный в `normalize.spec.ts` на namesLikelyMatch). Итого 117/117 (было 102).
+
+Проверки: `tsc --noEmit` — 0; `yarn test` — 117/117; `nest build` для всех 6 приложений —
+success; eslint на изменённых файлах — 0 новых проблем (сверено через `git stash` там, где
+файл уже имел преэкзистинг baseline — company.controller.ts, two-gis-import.controller.ts,
+patterns.ts). Живой smoke (реальные ключи 2ГИС+Яндекс, `MapVisibilityService` напрямую,
+без похода через RMQ/HTTP): существующая организация ("Кафе Пушкинъ") — verified
+visible=true/confidence=high на обоих провайдерах; несуществующая — verified
+visible=false на обоих (нет ложных срабатываний); без координат — text-only фолбэк
+Яндекса сработал (confidence low), 2ГИС корректно не находит (нет location — ожидаемо).
+
+Не проверено живьём: сам HTTP-эндпоинт `GET /company-visibility/check` через полный
+RMQ/HTTP стек (auth, x-brand-id, оркестрация двух RPC) — только прямой вызов сервисного
+слоя. Рекомендация: прогнать через живой стек перед реальным использованием.
+
+Риски: минимальные — новый изолированный модуль поверх существующих клиентов, новая
+колонка nullable (BC не нарушено), новые эндпоинты (не модификация существующих). Единственный
+риск — параметры `namesLikelyMatch`/`matchesCompany` подобраны на ограниченном живом
+примере (Кафе Пушкинъ), не откалиброваны на большой выборке.

@@ -14,6 +14,7 @@ import { TwoGisImportModule } from './import/two-gis-import.module';
 import { TwoGisPlacesModule } from './integrations/two-gis/two-gis-places.module';
 import { YandexPlacesModule } from './integrations/yandex/yandex-places.module';
 import { PlacesSearchModule } from './integrations/places-search/places-search.module';
+import { CompanyVisibilityModule } from './company-visibility/company-visibility.module';
 import { UploadModule } from './upload/upload.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { UploadModule } from './upload/upload.module';
     TwoGisPlacesModule,
     YandexPlacesModule,
     PlacesSearchModule,
+    CompanyVisibilityModule,
     UploadModule,
   ],
   controllers: [ApiGatewayController],

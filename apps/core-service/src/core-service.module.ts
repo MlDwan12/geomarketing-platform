@@ -18,6 +18,7 @@ import { AddLastLoginAt1750000003000 } from './migrations/1750000003000-AddLastL
 import { RefactorCompanySchema1750000004000 } from './migrations/1750000004000-RefactorCompanySchema';
 import { AddCompanyGroups1750000005000 } from './migrations/1750000005000-AddCompanyGroups';
 import { AddIndexes1750000006000 } from './migrations/1750000006000-AddIndexes';
+import { AddCompanyCoordinates1750000007000 } from './migrations/1750000007000-AddCompanyCoordinates';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AddIndexes1750000006000 } from './migrations/1750000006000-AddIndexes';
           RefactorCompanySchema1750000004000,
           AddCompanyGroups1750000005000,
           AddIndexes1750000006000,
+          AddCompanyCoordinates1750000007000,
         ],
         logging: config.get('NODE_ENV') === 'development',
       }),

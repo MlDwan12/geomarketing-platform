@@ -69,6 +69,24 @@ export class CompanyService {
     return { items, total, page, limit };
   }
 
+  // Без пагинации — минимальный набор полей для MapVisibility-проверки всей сети
+  // бренда разом (см. CONTEXT.md, MapVisibility). Не для отображения в UI-таблице,
+  // только id/name/addressDisplay/coordinates.
+  async listForVisibility(
+    brandId: string,
+    userId: string,
+  ): Promise<
+    Pick<Company, 'id' | 'name' | 'addressDisplay' | 'coordinates'>[]
+  > {
+    await this.checkBrandAccess(brandId, userId);
+
+    return this.companyRepo.find({
+      where: { brandId, status: Not(CompanyStatus.Deleted) },
+      select: ['id', 'name', 'addressDisplay', 'coordinates'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
   // ── Get ──────────────────────────────────────────────────────────────────
 
   async get(companyId: string, userId: string, brandId: string) {
@@ -123,6 +141,7 @@ export class CompanyService {
     addressDisplay?: string | null;
     rating?: number | null;
     reviewCount?: number;
+    coordinates?: [number, number] | null;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
 
@@ -163,6 +182,7 @@ export class CompanyService {
           addressDisplay: dto.addressDisplay ?? null,
           rating: dto.rating ?? null,
           reviewCount: dto.reviewCount ?? 0,
+          coordinates: dto.coordinates ?? null,
         }),
       );
 
