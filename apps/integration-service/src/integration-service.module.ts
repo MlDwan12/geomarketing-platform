@@ -4,9 +4,10 @@ import { IntegrationServiceService } from './integration-service.service';
 import { AppConfigModule } from '@geo/config';
 import { TwoGisModule } from './two-gis/two-gis.module';
 import { YandexModule } from './yandex/yandex.module';
+import { PlacesSearchModule } from './places-search/places-search.module';
 
 @Module({
-  imports: [AppConfigModule, TwoGisModule, YandexModule],
+  imports: [AppConfigModule, TwoGisModule, YandexModule, PlacesSearchModule],
   controllers: [IntegrationServiceController],
   providers: [IntegrationServiceService],
 })

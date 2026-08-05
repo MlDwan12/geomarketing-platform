@@ -5,5 +5,6 @@ import { TwoGisPlacesService } from './two-gis-places.service';
 @Module({
   controllers: [TwoGisController],
   providers: [TwoGisPlacesService],
+  exports: [TwoGisPlacesService],
 })
 export class TwoGisModule {}

@@ -1,8 +1,8 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
-import { SessionGuard } from '../auth/guards/session.guard';
-import { sendRpc } from '../common/rpc';
+import { SessionGuard } from '../../auth/guards/session.guard';
+import { sendRpc } from '../../common/rpc';
 import { SearchYandexPlacesDto } from './search-yandex-places.dto';
 
 @Controller('integrations/yandex')

@@ -73,6 +73,9 @@ export const Patterns = {
 
   // Integrations — Yandex Geosearch API (search-maps.yandex.ru/v1)
   YANDEX_PLACES_SEARCH: 'yandex.places.search', // { query, ll?, spn?, results?, skip? } → { items, total }
+
+  // Integrations — объединённый поиск по 2ГИС + Яндекс с дедупликацией
+  PLACES_SEARCH: 'places.search', // { query, location? } → { items, total, failedSources }
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

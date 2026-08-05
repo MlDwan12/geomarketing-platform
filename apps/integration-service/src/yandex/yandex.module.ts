@@ -5,5 +5,6 @@ import { YandexPlacesService } from './yandex-places.service';
 @Module({
   controllers: [YandexController],
   providers: [YandexPlacesService],
+  exports: [YandexPlacesService],
 })
 export class YandexModule {}
