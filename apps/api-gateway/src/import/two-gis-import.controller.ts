@@ -97,7 +97,9 @@ export class TwoGisImportController {
           addressDisplay: branch.address_name ?? branch.address ?? null,
           rating: catalog?.reviews?.general_rating ?? null,
           reviewCount: catalog?.reviews?.general_review_count ?? 0,
-          card: catalog ? this.mapCatalogToCard(catalog) : undefined,
+          fieldOverrides: catalog
+            ? this.mapCatalogToFieldOverrides(catalog)
+            : undefined,
         },
         RPC_TIMEOUT,
       );
@@ -177,7 +179,9 @@ export class TwoGisImportController {
             addressDisplay: branch.address_name ?? branch.address ?? null,
             rating: catalog?.reviews?.general_rating ?? null,
             reviewCount: catalog?.reviews?.general_review_count ?? 0,
-            card: catalog ? this.mapCatalogToCard(catalog) : undefined,
+            fieldOverrides: catalog
+              ? this.mapCatalogToFieldOverrides(catalog)
+              : undefined,
           },
           RPC_TIMEOUT,
         );
@@ -281,5 +285,19 @@ export class TwoGisImportController {
       ...(websites.length ? { websites } : {}),
       ...(socials.length ? { socials } : {}),
     };
+  }
+
+  // company.service.ts CompanyDefault.fieldOverrides ожидает форму
+  // Record<field, { value }> (см. company-default.entity.ts) — mapCatalogToCard
+  // отдаёт голые значения, здесь оборачиваем каждое поле.
+  private mapCatalogToFieldOverrides(
+    item: TwoGisCatalogItem,
+  ): Record<string, { value: unknown }> {
+    const card = this.mapCatalogToCard(item);
+    const overrides: Record<string, { value: unknown }> = {};
+    for (const [key, value] of Object.entries(card)) {
+      overrides[key] = { value };
+    }
+    return overrides;
   }
 }

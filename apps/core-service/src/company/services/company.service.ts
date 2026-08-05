@@ -120,6 +120,9 @@ export class CompanyService {
     templateId?: string;
     groups?: { id?: string; name?: string }[];
     fieldOverrides?: FieldOverrides;
+    addressDisplay?: string | null;
+    rating?: number | null;
+    reviewCount?: number;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId);
 
@@ -157,9 +160,9 @@ export class CompanyService {
           slug,
           status: dto.status ?? CompanyStatus.Draft,
           code: dto.code ?? null,
-          addressDisplay: null,
-          rating: null,
-          reviewCount: 0,
+          addressDisplay: dto.addressDisplay ?? null,
+          rating: dto.rating ?? null,
+          reviewCount: dto.reviewCount ?? 0,
         }),
       );
 
