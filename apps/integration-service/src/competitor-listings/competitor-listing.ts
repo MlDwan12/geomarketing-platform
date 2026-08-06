@@ -11,6 +11,7 @@ const CATEGORY_SIMILARITY_THRESHOLD = 0.5;
 export interface CompetitorListing {
   name: string;
   address?: string;
+  phone?: string;
   coordinates?: [number, number];
   categories?: string[];
   rating?: number;
@@ -66,6 +67,7 @@ function toCompetitorListing(
   return {
     name: place.name,
     address: place.address,
+    phone: place.phone,
     coordinates: place.coordinates,
     categories: place.categories,
     rating: place.rating,
