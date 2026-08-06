@@ -170,3 +170,98 @@ describe('CompetitorAnalysisOrchestratorService.generateForCompany', () => {
     expect(aiCall.own.hasPhone).toBe(false);
   });
 });
+
+describe('CompetitorAnalysisOrchestratorService.generateForBrand', () => {
+  const companiesForListing = [
+    { id: 'c1', name: 'Точка 1', addressDisplay: null, coordinates: null },
+    { id: 'c2', name: 'Точка 2', addressDisplay: null, coordinates: null },
+  ];
+
+  it('генерирует отчёт для каждой компании бренда, полученной через COMPANY_LIST_FOR_VISIBILITY', async () => {
+    const core = fakeClient({
+      [Patterns.COMPANY_LIST_FOR_VISIBILITY]: companiesForListing,
+      [Patterns.COMPANY_GET]: { ...companyGetResult, card: { fields: {} } },
+      [Patterns.COMPETITOR_ANALYSIS_SAVE]: { id: 'report-x' },
+    });
+    const integration = fakeClient({
+      [Patterns.MAP_VISIBILITY_CHECK]: [
+        { companyId: 'c1', byProvider: { yandex: { matchedItem: undefined } } },
+      ],
+      [Patterns.COMPETITOR_LISTINGS_FIND]: [],
+    });
+    const ai = fakeClient({
+      [Patterns.AI_COMPETITOR_ANALYSIS_GENERATE]: {
+        cardComparison: {},
+        ratingComparison: {},
+        textAnalysis: null,
+      },
+    });
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      integration.client,
+      ai.client,
+      fakeReviewsFetcher({}).service,
+    );
+
+    const results = await orchestrator.generateForBrand('brand-1', 'user-1');
+
+    expect(core.send).toHaveBeenCalledWith(
+      Patterns.COMPANY_LIST_FOR_VISIBILITY,
+      { brandId: 'brand-1', userId: 'user-1' },
+    );
+    expect(results).toEqual([
+      { companyId: 'c1', success: true, report: { id: 'report-x' } },
+      { companyId: 'c2', success: true, report: { id: 'report-x' } },
+    ]);
+  });
+
+  it('одна компания упала — партиальный успех, остальные всё равно обрабатываются', async () => {
+    const send = jest.fn((pattern: string, payload: unknown) => {
+      if (pattern === Patterns.COMPANY_LIST_FOR_VISIBILITY) {
+        return of(companiesForListing);
+      }
+      if (pattern === Patterns.COMPANY_GET) {
+        const { companyId } = payload as { companyId: string };
+        if (companyId === 'c1') {
+          throw new Error('core-service недоступен');
+        }
+        return of({ ...companyGetResult, id: companyId, card: { fields: {} } });
+      }
+      if (pattern === Patterns.COMPETITOR_ANALYSIS_SAVE) {
+        return of({ id: 'report-c2' });
+      }
+      return of(undefined);
+    });
+    const core = { client: { send } as unknown as ClientProxy, send };
+    const integration = fakeClient({
+      [Patterns.MAP_VISIBILITY_CHECK]: [
+        { companyId: 'c2', byProvider: { yandex: { matchedItem: undefined } } },
+      ],
+      [Patterns.COMPETITOR_LISTINGS_FIND]: [],
+    });
+    const ai = fakeClient({
+      [Patterns.AI_COMPETITOR_ANALYSIS_GENERATE]: {
+        cardComparison: {},
+        ratingComparison: {},
+        textAnalysis: null,
+      },
+    });
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      integration.client,
+      ai.client,
+      fakeReviewsFetcher({}).service,
+    );
+
+    const results = await orchestrator.generateForBrand('brand-1', 'user-1');
+
+    expect(results).toEqual([
+      {
+        companyId: 'c1',
+        success: false,
+        error: 'core-service недоступен',
+      },
+      { companyId: 'c2', success: true, report: { id: 'report-c2' } },
+    ]);
+  });
+});

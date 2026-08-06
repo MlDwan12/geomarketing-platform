@@ -9,6 +9,11 @@ import { CompetitorReviewsFetcherService } from './competitor-reviews-fetcher.se
 // что и в company-visibility, см. VISIBILITY_CHECK_TIMEOUT там).
 const RPC_TIMEOUT = 30000;
 
+// Тот же принцип батчинга, что в MapVisibilityService.checkVisibility —
+// сеть в 50 точек не должна улететь в rate limit 2ГИС/Яндекса/map-parser
+// разом.
+const BRAND_BATCH_CONCURRENCY = 5;
+
 interface PlaceSourceRef {
   provider: '2gis' | 'yandex';
   id: string;
@@ -50,6 +55,23 @@ export interface SavedCompetitorAnalysisReport {
   id: string;
   companyId: string;
   createdAt: string;
+}
+
+interface CompanyForListing {
+  id: string;
+  name: string;
+  addressDisplay: string | null;
+  coordinates: [number, number] | null;
+}
+
+export interface BrandGenerationResult {
+  companyId: string;
+  success: boolean;
+  report?: SavedCompetitorAnalysisReport;
+  // Генерация для одной компании упала (сеть/AI/скрапинг) — не валит весь
+  // батч, остальные компании бренда всё равно обрабатываются (partial
+  // success, тот же принцип, что в PlacesSearchService/MapVisibilityService).
+  error?: string;
 }
 
 // Оркестрация генерации CompetitorAnalysisReport на одну Company (см.
@@ -153,6 +175,53 @@ export class CompetitorAnalysisOrchestratorService {
       },
       RPC_TIMEOUT,
     );
+  }
+
+  // Batch-генерация на весь Brand разом (см.
+  // docs/refactor-plans/competitor-analysis-report.md, коммит 7) — листинг
+  // компаний через уже существующий Patterns.COMPANY_LIST_FOR_VISIBILITY,
+  // дальше generateForCompany на каждую батчами по BRAND_BATCH_CONCURRENCY.
+  async generateForBrand(
+    brandId: string,
+    userId: string,
+  ): Promise<BrandGenerationResult[]> {
+    const companies = await sendRpc<CompanyForListing[]>(
+      this.coreClient,
+      Patterns.COMPANY_LIST_FOR_VISIBILITY,
+      { brandId, userId },
+      RPC_TIMEOUT,
+    );
+
+    const results: BrandGenerationResult[] = [];
+
+    for (let i = 0; i < companies.length; i += BRAND_BATCH_CONCURRENCY) {
+      const batch = companies.slice(i, i + BRAND_BATCH_CONCURRENCY);
+      const batchResults = await Promise.all(
+        batch.map((company) =>
+          this.generateOneForBrand(company.id, brandId, userId),
+        ),
+      );
+      results.push(...batchResults);
+    }
+
+    return results;
+  }
+
+  private async generateOneForBrand(
+    companyId: string,
+    brandId: string,
+    userId: string,
+  ): Promise<BrandGenerationResult> {
+    try {
+      const report = await this.generateForCompany(companyId, brandId, userId);
+      return { companyId, success: true, report };
+    } catch (err) {
+      return {
+        companyId,
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
   }
 
   private findYandexSourceId(

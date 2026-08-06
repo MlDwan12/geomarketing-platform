@@ -10,6 +10,19 @@ export class CompetitorAnalysisController {
     private readonly orchestrator: CompetitorAnalysisOrchestratorService,
   ) {}
 
+  // POST /competitor-analysis/brand — сгенерировать и сохранить отчёт для
+  // ВСЕХ Company бренда разом, батчами (см.
+  // docs/refactor-plans/competitor-analysis-report.md, коммит 7). Роут
+  // объявлен раньше ':companyId/generate' на всякий случай, но коллизии нет —
+  // разное число сегментов пути ('brand' — один, ':companyId/generate' — два).
+  @Post('brand')
+  generateForBrand(
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.orchestrator.generateForBrand(brandId, user.userId);
+  }
+
   // POST /competitor-analysis/:companyId/generate — сгенерировать и
   // сохранить новую версию CompetitorAnalysisReport для одной Company (см.
   // docs/refactor-plans/competitor-analysis-report.md, коммит 6).
