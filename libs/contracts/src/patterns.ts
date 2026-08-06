@@ -86,6 +86,10 @@ export const Patterns = {
   COMPETITOR_ANALYSIS_SAVE: 'competitorAnalysis.save',
   COMPETITOR_ANALYSIS_GET_LATEST: 'competitorAnalysis.getLatest',
   COMPETITOR_ANALYSIS_LIST_HISTORY: 'competitorAnalysis.listHistory',
+
+  // Integrations — поиск CompetitorListing для CompetitorAnalysisReport
+  // (коммит 3 плана) — { company: CompanyRef } → CompetitorListing[]
+  COMPETITOR_LISTINGS_FIND: 'competitorListings.find',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

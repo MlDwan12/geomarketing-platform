@@ -34,6 +34,24 @@ describe('normalizeTwoGisItem', () => {
     const item: TwoGisPlaceItem = { id: '1', address_name: 'Короткий адрес' };
     expect(normalizeTwoGisItem(item).address).toBe('Короткий адрес');
   });
+
+  it('вытаскивает rating/reviewCount из reviews (если запрошены fields)', () => {
+    const item: TwoGisPlaceItem = {
+      id: '1',
+      reviews: { general_rating: 4.5, general_review_count: 120 },
+    };
+    expect(normalizeTwoGisItem(item)).toMatchObject({
+      rating: 4.5,
+      reviewCount: 120,
+    });
+  });
+
+  it('reviews не запрошены — rating/reviewCount не заданы', () => {
+    const item: TwoGisPlaceItem = { id: '1' };
+    const result = normalizeTwoGisItem(item);
+    expect(result.rating).toBeUndefined();
+    expect(result.reviewCount).toBeUndefined();
+  });
 });
 
 describe('normalizeYandexItem', () => {

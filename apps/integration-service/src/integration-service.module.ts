@@ -6,6 +6,7 @@ import { TwoGisModule } from './two-gis/two-gis.module';
 import { YandexModule } from './yandex/yandex.module';
 import { PlacesSearchModule } from './places-search/places-search.module';
 import { MapVisibilityModule } from './map-visibility/map-visibility.module';
+import { CompetitorListingsModule } from './competitor-listings/competitor-listings.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { MapVisibilityModule } from './map-visibility/map-visibility.module';
     YandexModule,
     PlacesSearchModule,
     MapVisibilityModule,
+    CompetitorListingsModule,
   ],
   controllers: [IntegrationServiceController],
   providers: [IntegrationServiceService],

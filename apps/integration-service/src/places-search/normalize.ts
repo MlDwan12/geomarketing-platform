@@ -23,6 +23,12 @@ export interface NormalizedPlace {
   phone?: string;
   coordinates?: [number, number]; // [lon, lat]
   categories?: string[];
+  // Для CompetitorAnalysisReport (см. docs/refactor-plans/competitor-analysis-report.md,
+  // коммит 3) — сравнение рейтинга/кол-ва отзывов с конкурентами. Заполняется
+  // только когда провайдер реально отдал эти данные (2ГИС — при запросе fields
+  // с 'reviews'); для Яндекса сейчас не заполняется — see normalizeYandexItem.
+  rating?: number;
+  reviewCount?: number;
   sources: PlaceSource[];
 }
 
@@ -37,6 +43,8 @@ export function normalizeTwoGisItem(item: TwoGisPlaceItem): NormalizedPlace {
     phone,
     coordinates: item.point ? [item.point.lon, item.point.lat] : undefined,
     categories: item.rubrics?.map((r) => r.name),
+    rating: item.reviews?.general_rating,
+    reviewCount: item.reviews?.general_review_count,
     sources: [{ provider: '2gis', id: item.id, raw: item }],
   };
 }
@@ -54,6 +62,10 @@ export function normalizeYandexItem(
     categories: meta?.Categories?.map((c) => c.name).filter((n): n is string =>
       Boolean(n),
     ),
+    // YandexOrgFeature.CompanyMetaData не содержит поля рейтинга в текущем
+    // типе — не проверено живым запросом, какое имя поля использует Яндекс
+    // (или используется ли оно вообще для type=biz). Не гадаем — rating/
+    // reviewCount остаются undefined, пока не подтверждено живьём.
     sources: [{ provider: 'yandex', id: meta?.id ?? '', raw: feature }],
   };
 }
