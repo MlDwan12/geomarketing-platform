@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Patterns } from '@geo/contracts';
 import {
   normalizeTwoGisCatalogItem,
+  toFieldOverrides,
   TwoGisCatalogItem,
 } from '@geo/card-format';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
@@ -89,7 +90,7 @@ export class TwoGisImportController {
             ? ([catalog.point.lon, catalog.point.lat] as [number, number])
             : null,
           fieldOverrides: catalog
-            ? this.mapCatalogToFieldOverrides(catalog)
+            ? toFieldOverrides(normalizeTwoGisCatalogItem(catalog))
             : undefined,
         },
         RPC_TIMEOUT,
@@ -174,7 +175,7 @@ export class TwoGisImportController {
               ? ([catalog.point.lon, catalog.point.lat] as [number, number])
               : null,
             fieldOverrides: catalog
-              ? this.mapCatalogToFieldOverrides(catalog)
+              ? toFieldOverrides(normalizeTwoGisCatalogItem(catalog))
               : undefined,
           },
           RPC_TIMEOUT,
@@ -243,19 +244,5 @@ export class TwoGisImportController {
     } catch {
       return null;
     }
-  }
-
-  // company.service.ts CompanyDefault.fieldOverrides ожидает форму
-  // Record<field, { value }> (см. company-default.entity.ts) — normalizeTwoGisCatalogItem
-  // отдаёт голые значения, здесь оборачиваем каждое поле.
-  private mapCatalogToFieldOverrides(
-    item: TwoGisCatalogItem,
-  ): Record<string, { value: unknown }> {
-    const card = normalizeTwoGisCatalogItem(item);
-    const overrides: Record<string, { value: unknown }> = {};
-    for (const [key, value] of Object.entries(card)) {
-      overrides[key] = { value };
-    }
-    return overrides;
   }
 }
