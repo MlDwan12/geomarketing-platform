@@ -90,6 +90,11 @@ export const Patterns = {
   // Integrations — поиск CompetitorListing для CompetitorAnalysisReport
   // (коммит 3 плана) — { company: CompanyRef } → CompetitorListing[]
   COMPETITOR_LISTINGS_FIND: 'competitorListings.find',
+
+  // AI — сравнение с конкурентами (коммит 5 плана). cardComparison/
+  // ratingComparison — детерминированные, textAnalysis — заглушка (null),
+  // реальный вызов Claude API не подключён (см. Out of Scope плана).
+  AI_COMPETITOR_ANALYSIS_GENERATE: 'ai.competitorAnalysis.generate',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
