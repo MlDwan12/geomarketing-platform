@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
       }
     },
+    "card-format": {
+      "type": "library",
+      "root": "libs/card-format",
+      "entryFile": "index",
+      "sourceRoot": "libs/card-format/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/card-format/tsconfig.lib.json"
+      }
+    },
     "common": {
       "type": "library",
       "root": "libs/common",

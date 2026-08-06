@@ -101,6 +101,7 @@
       "<rootDir>/libs/"
     ],
     "moduleNameMapper": {
+      "^@geo/card-format(|/.*)$": "<rootDir>/libs/card-format/src/$1",
       "^@geo/common(|/.*)$": "<rootDir>/libs/common/src/$1",
       "^@geo/config(|/.*)$": "<rootDir>/libs/config/src/$1",
       "^@geo/contracts(|/.*)$": "<rootDir>/libs/contracts/src/$1",

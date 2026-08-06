@@ -22,6 +22,12 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@geo/card-format": [
+        "libs/card-format/src"
+      ],
+      "@geo/card-format/*": [
+        "libs/card-format/src/*"
+      ],
       "@geo/common": [
         "libs/common/src"
       ],
