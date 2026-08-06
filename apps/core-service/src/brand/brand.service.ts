@@ -5,6 +5,11 @@ import { RpcException } from '@nestjs/microservices';
 import { Brand, BrandStatus } from './brand.entity';
 import { UserBrand } from './user-brand.entity';
 import { UserRole, UserStatus } from '../user/user.entity';
+import { isUniqueViolation } from '../common/unique-violation.util';
+
+// DB-002: тот же паттерн гонки, что и в CompanyService.generateSlug —
+// см. комментарий там.
+const MAX_SLUG_RETRIES = 3;
 
 @Injectable()
 export class BrandService {
@@ -60,19 +65,31 @@ export class BrandService {
     userId: string;
     status?: BrandStatus;
   }) {
-    const slug = await this.generateSlug(dto.name);
-
-    const brand = await this.brandRepo.save(
-      this.brandRepo.create({
-        name: dto.name,
-        slug,
-        ownerId: dto.userId,
-        timezone: dto.timezone,
-        description: dto.description ?? null,
-        logoUrl: dto.logoUrl ?? null,
-        status: dto.status ?? BrandStatus.Active,
-      }),
-    );
+    let brand: Brand | undefined;
+    for (let attempt = 0; ; attempt++) {
+      const slug = await this.generateSlug(dto.name);
+      try {
+        brand = await this.brandRepo.save(
+          this.brandRepo.create({
+            name: dto.name,
+            slug,
+            ownerId: dto.userId,
+            timezone: dto.timezone,
+            description: dto.description ?? null,
+            logoUrl: dto.logoUrl ?? null,
+            status: dto.status ?? BrandStatus.Active,
+          }),
+        );
+        break;
+      } catch (err) {
+        if (
+          attempt < MAX_SLUG_RETRIES &&
+          isUniqueViolation(err, 'UQ_brands_slug')
+        )
+          continue;
+        throw err;
+      }
+    }
 
     await this.userBrandRepo.save(
       this.userBrandRepo.create({
@@ -124,14 +141,25 @@ export class BrandService {
 
     const { userId: _, ...fields } = dto;
 
-    if (fields.name && fields.name !== brand.name) {
-      const newSlug = await this.generateSlug(fields.name);
-      Object.assign(brand, fields, { slug: newSlug });
-    } else {
+    if (!fields.name || fields.name === brand.name) {
       Object.assign(brand, fields);
+      return this.brandRepo.save(brand);
     }
 
-    return this.brandRepo.save(brand);
+    for (let attempt = 0; ; attempt++) {
+      const newSlug = await this.generateSlug(fields.name);
+      Object.assign(brand, fields, { slug: newSlug });
+      try {
+        return await this.brandRepo.save(brand);
+      } catch (err) {
+        if (
+          attempt < MAX_SLUG_RETRIES &&
+          isUniqueViolation(err, 'UQ_brands_slug')
+        )
+          continue;
+        throw err;
+      }
+    }
   }
 
   private async generateSlug(name: string): Promise<string> {

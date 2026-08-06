@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Not, Repository } from 'typeorm';
+import { isUniqueViolation } from '../../common/unique-violation.util';
 import { RpcException } from '@nestjs/microservices';
 import { Paginated } from '@geo/contracts';
 import { Company, CompanyStatus } from '../entities/company.entity';
@@ -26,6 +27,13 @@ import { CompanyGroupService } from './company-group.service';
 import { CompanyPlatformService } from './company-platform.service';
 
 const DEFAULT_PLATFORM_KEYS = ['yandex', 'twogis'];
+
+// DB-002: generateSlug проверяет свободность слага отдельными SELECT до
+// вставки — при гонке два запроса могут пройти проверку на одном и том же
+// слаге. companies.slug защищён UNIQUE (UQ_companies_slug), поэтому при
+// нарушении просто перегенерируем слаг (теперь SELECT увидит конкурирующую
+// уже закоммиченную запись) и повторяем — вместо падения по гонке.
+const MAX_SLUG_RETRIES = 3;
 
 @Injectable()
 export class CompanyService {
@@ -169,8 +177,27 @@ export class CompanyService {
       });
     }
 
-    const slug = await this.generateSlug(resolvedName);
+    for (let attempt = 0; ; attempt++) {
+      const slug = await this.generateSlug(resolvedName);
+      try {
+        return await this.insertCompany(dto, resolvedName, slug);
+      } catch (err) {
+        if (
+          attempt < MAX_SLUG_RETRIES &&
+          isUniqueViolation(err, 'UQ_companies_slug')
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
 
+  private async insertCompany(
+    dto: Parameters<CompanyService['create']>[0],
+    resolvedName: string,
+    slug: string,
+  ) {
     return this.dataSource.transaction(async (em) => {
       const company = await em.save(
         em.create(Company, {
