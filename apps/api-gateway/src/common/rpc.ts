@@ -5,6 +5,17 @@ import { CORRELATION_ID_HEADER, RequestContext } from '@geo/logger';
 // Таймаут по умолчанию для RPC-запросов к сервисам через RabbitMQ.
 export const DEFAULT_RPC_TIMEOUT = 5000;
 
+// REL-001: таймаут переопределяем через RPC_TIMEOUT_MS (env), не меняя код.
+// Читаем process.env лениво (внутри функции, а не в константе модуля) —
+// на момент импорта этого файла ConfigModule.forRoot() ещё не успевает
+// загрузить .env через dotenv, значение было бы всегда undefined.
+function resolveDefaultTimeout(): number {
+  const fromEnv = Number(process.env.RPC_TIMEOUT_MS);
+  return Number.isFinite(fromEnv) && fromEnv > 0
+    ? fromEnv
+    : DEFAULT_RPC_TIMEOUT;
+}
+
 /**
  * Отправляет RPC-команду и ждёт единственный ответ с таймаутом.
  *
@@ -24,7 +35,7 @@ export function sendRpc<T = any>(
   client: ClientProxy,
   pattern: string,
   payload: unknown,
-  timeoutMs: number = DEFAULT_RPC_TIMEOUT,
+  timeoutMs: number = resolveDefaultTimeout(),
 ): Promise<T> {
   const correlationId = RequestContext.getCorrelationId();
   const message: unknown = correlationId

@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import { ClientProxy, RmqRecord } from '@nestjs/microservices';
 import { CORRELATION_ID_HEADER, RequestContext } from '@geo/logger';
 import { DEFAULT_RPC_TIMEOUT, sendRpc } from './rpc';
@@ -51,5 +51,40 @@ describe('sendRpc — correlation-id propagation', () => {
 
   it('таймаут по умолчанию (DEFAULT_RPC_TIMEOUT) не меняется этим коммитом', () => {
     expect(DEFAULT_RPC_TIMEOUT).toBe(5000);
+  });
+});
+
+describe('sendRpc — REL-001, RPC_TIMEOUT_MS переопределяет дефолтный таймаут', () => {
+  const originalEnv = process.env.RPC_TIMEOUT_MS;
+
+  afterEach(() => {
+    process.env.RPC_TIMEOUT_MS = originalEnv;
+  });
+
+  it('без RPC_TIMEOUT_MS используется DEFAULT_RPC_TIMEOUT (поведение не меняется)', async () => {
+    delete process.env.RPC_TIMEOUT_MS;
+    const client = fakeClient({ ok: true });
+
+    await sendRpc(asClient(client), 'some.pattern', {});
+
+    expect(client.send).toHaveBeenCalled();
+  });
+
+  it('с RPC_TIMEOUT_MS запрос обрывается по новому таймауту раньше DEFAULT_RPC_TIMEOUT', async () => {
+    process.env.RPC_TIMEOUT_MS = '10';
+    const client = { send: jest.fn().mockReturnValue(NEVER) };
+
+    await expect(
+      sendRpc(asClient(client), 'some.pattern', {}),
+    ).rejects.toThrow();
+  });
+
+  it('невалидное значение RPC_TIMEOUT_MS игнорируется, остаётся DEFAULT_RPC_TIMEOUT', async () => {
+    process.env.RPC_TIMEOUT_MS = 'not-a-number';
+    const client = fakeClient({ ok: true });
+
+    await sendRpc(asClient(client), 'some.pattern', {});
+
+    expect(client.send).toHaveBeenCalled();
   });
 });

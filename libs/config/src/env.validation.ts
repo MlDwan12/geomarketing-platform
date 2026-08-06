@@ -42,6 +42,12 @@ export class EnvValidationSchema {
   @IsString()
   CORS_ORIGINS?: string;
 
+  // Таймаут (мс) по умолчанию для RPC-запросов к сервисам через RabbitMQ
+  // (см. common/rpc.ts). Не задано — используется DEFAULT_RPC_TIMEOUT (5000).
+  @IsOptional()
+  @IsNumberString()
+  RPC_TIMEOUT_MS?: string;
+
   @IsOptional()
   @IsString()
   REDIS_HOST?: string;
