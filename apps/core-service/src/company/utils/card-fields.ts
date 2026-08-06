@@ -1,20 +1,10 @@
+import { LangItem, LANG_MERGE_FIELDS } from '@geo/card-format';
 import {
   CompanyDefault,
   FieldOverride,
   FieldOverrides,
 } from '../entities/company-default.entity';
 import { CompanyTemplate } from '../entities/company-template.entity';
-
-// Мультиязычные поля мержатся по языку (а не заменяются целиком) при platform-override.
-export const LANG_MERGE_FIELDS = new Set([
-  'names',
-  'shortNames',
-  'altNames',
-  'descriptions',
-  'shortDescriptions',
-]);
-
-export type LangItem = { lang: string; val: string };
 
 // Единое правило приоритета (ARCH-003): true, если хранимое значение override
 // должно перебить значение шаблона для базового (не platform-specific) значения.
