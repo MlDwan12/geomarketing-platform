@@ -34,5 +34,6 @@ import { CompanyPlatformService } from './services/company-platform.service';
     CompanyGroupService,
     CompanyPlatformService,
   ],
+  exports: [CompanyAccessService],
 })
 export class CompanyModule {}

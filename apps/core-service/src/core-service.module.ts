@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { BrandModule } from './brand/brand.module';
 import { CompanyModule } from './company/company.module';
+import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analysis.module';
 import { RpcExceptionFilter } from './rpc-exception.filter';
 import { CorrelationIdInterceptor } from './correlation-id.interceptor';
 import { Init1750000000000 } from './migrations/1750000000000-Init';
@@ -19,6 +20,7 @@ import { RefactorCompanySchema1750000004000 } from './migrations/1750000004000-R
 import { AddCompanyGroups1750000005000 } from './migrations/1750000005000-AddCompanyGroups';
 import { AddIndexes1750000006000 } from './migrations/1750000006000-AddIndexes';
 import { AddCompanyCoordinates1750000007000 } from './migrations/1750000007000-AddCompanyCoordinates';
+import { AddCompetitorAnalysisReports1750000008000 } from './migrations/1750000008000-AddCompetitorAnalysisReports';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { AddCompanyCoordinates1750000007000 } from './migrations/1750000007000-A
           AddCompanyGroups1750000005000,
           AddIndexes1750000006000,
           AddCompanyCoordinates1750000007000,
+          AddCompetitorAnalysisReports1750000008000,
         ],
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -50,6 +53,7 @@ import { AddCompanyCoordinates1750000007000 } from './migrations/1750000007000-A
     PasswordResetModule,
     BrandModule,
     CompanyModule,
+    CompetitorAnalysisModule,
   ],
   controllers: [CoreServiceController],
   providers: [

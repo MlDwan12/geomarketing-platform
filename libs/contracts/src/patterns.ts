@@ -80,6 +80,12 @@ export const Patterns = {
 
   // Integrations — проверка MapVisibility существующих Company на 2ГИС/Яндекс
   MAP_VISIBILITY_CHECK: 'mapVisibility.check', // { companies: CompanyRef[] } → MapVisibilityResult[]
+
+  // CompetitorAnalysisReport — см. CONTEXT.md, docs/refactor-plans/competitor-analysis-report.md.
+  // Коммит 1: только хранение/чтение истории, без бизнес-логики поиска конкурентов.
+  COMPETITOR_ANALYSIS_SAVE: 'competitorAnalysis.save',
+  COMPETITOR_ANALYSIS_GET_LATEST: 'competitorAnalysis.getLatest',
+  COMPETITOR_ANALYSIS_LIST_HISTORY: 'competitorAnalysis.listHistory',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
