@@ -47,7 +47,7 @@ async function bootstrap() {
   // возвращаем тем же заголовком в ответе. Регистрируется первым, чтобы весь
   // последующий код запроса (CORS, сессии, обработчики ошибок, контроллеры)
   // выполнялся внутри этого контекста.
-  app.use((req: any, res: any, next: any) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const correlationId = resolveCorrelationId(
       req.headers[CORRELATION_ID_HEADER],
     );
@@ -70,8 +70,8 @@ async function bootstrap() {
     .filter(Boolean);
   const corsAllowAll = corsOrigins.length === 0;
 
-  app.use((req: any, res: any, next: any) => {
-    const origin = req.headers.origin as string | undefined;
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
     if (origin && (corsAllowAll || corsOrigins.includes(origin))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     }
@@ -125,7 +125,7 @@ async function bootstrap() {
 
   // SameSite=None is required for cross-origin HTTPS (production); on HTTP (localhost) use Lax
   // because browsers reject SameSite=None without Secure.
-  app.use((req: any, _res: any, next: any) => {
+  app.use((req: Request, _res: Response, next: NextFunction) => {
     if (req.session?.cookie) {
       const isSecure = !!(
         req.secure || req.headers['x-forwarded-proto'] === 'https'

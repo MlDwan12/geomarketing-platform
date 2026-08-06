@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import type { Request, Response } from 'express';
 import { Patterns } from '@geo/contracts';
 import { LoggerService } from '@geo/logger';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
@@ -41,7 +42,7 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async login(@Body() dto: LoginDto, @Req() req: any) {
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
     const user = await sendRpc(this.coreClient, Patterns.USER_VALIDATE, {
       email: dto.email,
       password: dto.password,
@@ -71,7 +72,7 @@ export class AuthController {
   @HttpCode(201)
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async register(@Body() dto: RegisterDto, @Req() req: any) {
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
     const user = await sendRpc(this.coreClient, Patterns.USER_CREATE, {
       name: dto.name,
       email: dto.email,
@@ -136,7 +137,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   @UseGuards(SessionGuard)
-  async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     await new Promise<void>((resolve) => req.session.destroy(() => resolve()));
     res.clearCookie('connect.sid');
     return {};
