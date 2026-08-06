@@ -10,6 +10,10 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Patterns } from '@geo/contracts';
+import {
+  normalizeTwoGisCatalogItem,
+  TwoGisCatalogItem,
+} from '@geo/card-format';
 import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -29,22 +33,6 @@ type TwoGisBranch = {
   name: string;
   address?: string;
   address_name?: string;
-};
-
-type TwoGisCatalogItem = {
-  name?: string;
-  address_name?: string;
-  address_comment?: string;
-  point?: { lat: number; lon: number };
-  reviews?: {
-    general_rating?: number;
-    general_review_count?: number;
-  };
-  rubrics?: { id: string; name: string; kind: string }[];
-  schedule?: Record<string, unknown>;
-  contact_groups?: {
-    contacts?: { type: string; value: string; comment?: string }[];
-  }[];
 };
 
 @Controller('import/2gis')
@@ -257,49 +245,13 @@ export class TwoGisImportController {
     }
   }
 
-  private mapCatalogToCard(item: TwoGisCatalogItem): Record<string, unknown> {
-    const primary = item.rubrics?.find((r) => r.kind === 'primary');
-    const additional = item.rubrics?.filter((r) => r.kind !== 'primary') ?? [];
-
-    const phones: { value: string; comment?: string }[] = [];
-    const websites: string[] = [];
-    const socials: { type: string; value: string }[] = [];
-
-    for (const group of item.contact_groups ?? []) {
-      for (const c of group.contacts ?? []) {
-        if (c.type === 'phone')
-          phones.push({ value: c.value, comment: c.comment });
-        else if (c.type === 'website') websites.push(c.value);
-        else socials.push({ type: c.type, value: c.value });
-      }
-    }
-
-    return {
-      ...(primary
-        ? { mainCategory: { id: primary.id, name: primary.name } }
-        : {}),
-      ...(additional.length
-        ? {
-            additionalCategories: additional.map((r) => ({
-              id: r.id,
-              name: r.name,
-            })),
-          }
-        : {}),
-      ...(item.schedule ? { schedule: item.schedule } : {}),
-      ...(phones.length ? { phones } : {}),
-      ...(websites.length ? { websites } : {}),
-      ...(socials.length ? { socials } : {}),
-    };
-  }
-
   // company.service.ts CompanyDefault.fieldOverrides ожидает форму
-  // Record<field, { value }> (см. company-default.entity.ts) — mapCatalogToCard
+  // Record<field, { value }> (см. company-default.entity.ts) — normalizeTwoGisCatalogItem
   // отдаёт голые значения, здесь оборачиваем каждое поле.
   private mapCatalogToFieldOverrides(
     item: TwoGisCatalogItem,
   ): Record<string, { value: unknown }> {
-    const card = this.mapCatalogToCard(item);
+    const card = normalizeTwoGisCatalogItem(item);
     const overrides: Record<string, { value: unknown }> = {};
     for (const [key, value] of Object.entries(card)) {
       overrides[key] = { value };
