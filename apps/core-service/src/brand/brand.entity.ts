@@ -15,32 +15,32 @@ export enum BrandStatus {
 @Entity('brands')
 export class Brand {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ length: 100 })
-  name: string;
+  name!: string;
 
   @Column({ length: 120, unique: true })
-  slug: string;
+  slug!: string;
 
   @Column({ type: 'uuid' })
-  ownerId: string;
+  ownerId!: string;
 
   @Column({ type: 'enum', enum: BrandStatus, default: BrandStatus.Active })
-  status: BrandStatus;
+  status: BrandStatus = BrandStatus.Active;
 
   @Column({ length: 64 })
-  timezone: string;
+  timezone!: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string | null;
+  description: string | null = null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  logoUrl: string | null;
+  logoUrl: string | null = null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

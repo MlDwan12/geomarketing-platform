@@ -9,17 +9,17 @@ import {
 @Entity('company_groups')
 export class CompanyGroup {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  brandId: string;
+  brandId!: string;
 
   @Column({ length: 255 })
-  name: string;
+  name!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

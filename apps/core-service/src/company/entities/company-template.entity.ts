@@ -9,21 +9,21 @@ import {
 @Entity('company_templates')
 export class CompanyTemplate {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  brandId: string;
+  brandId!: string;
 
   @Column({ length: 255 })
-  name: string;
+  name!: string;
 
   // Flat field values: { names: [...], phones: [...], address: {...}, ... }
   @Column({ type: 'jsonb', default: '{}' })
-  fields: Record<string, unknown>;
+  fields: Record<string, unknown> = {};
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

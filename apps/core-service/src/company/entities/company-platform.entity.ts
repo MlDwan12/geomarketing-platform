@@ -13,33 +13,33 @@ export enum PlatformStatus {
 @Unique(['companyId', 'platformKey'])
 export class CompanyPlatform {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  companyId: string;
+  companyId!: string;
 
   // String key — extensible to any number of platforms
   @Column({ length: 64 })
-  platformKey: string;
+  platformKey!: string;
 
   @Column({ type: 'enum', enum: PlatformStatus, default: PlatformStatus.NotConnected })
-  status: PlatformStatus;
+  status: PlatformStatus = PlatformStatus.NotConnected;
 
   @Column({ default: false })
-  isEnabled: boolean;
+  isEnabled: boolean = false;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  orgId: string | null;
+  orgId: string | null = null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  orgName: string | null;
+  orgName: string | null = null;
 
   @Column({ type: 'timestamp', nullable: true })
-  connectedAt: Date | null;
+  connectedAt: Date | null = null;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastSyncAt: Date | null;
+  lastSyncAt: Date | null = null;
 
   @Column({ type: 'text', nullable: true })
-  syncError: string | null;
+  syncError: string | null = null;
 }

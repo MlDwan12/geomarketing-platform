@@ -4,5 +4,5 @@ export class UpdateAvatarDto {
   @IsString()
   @IsUrl()
   @MaxLength(500)
-  avatarUrl: string;
+  avatarUrl!: string;
 }

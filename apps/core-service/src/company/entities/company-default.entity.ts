@@ -11,16 +11,16 @@ export type FieldOverrides = Record<string, FieldOverride>;
 @Entity('company_defaults')
 export class CompanyDefault {
   @PrimaryColumn({ type: 'uuid' })
-  companyId: string;
+  companyId!: string;
 
   @Column({ type: 'uuid', nullable: true })
-  templateId: string | null;
+  templateId: string | null = null;
 
   // Per-field overrides:
   // { fieldName: { isException, value?, platforms?: { platformKey: value } } }
   @Column({ type: 'jsonb', default: '{}' })
-  fieldOverrides: FieldOverrides;
+  fieldOverrides: FieldOverrides = {};
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

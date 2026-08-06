@@ -26,7 +26,7 @@ const ALLOWED_FIELDS = [
 export class SearchPlacesDto {
   @IsString()
   @IsNotEmpty()
-  q: string;
+  q!: string;
 
   // Формат 2ГИС: "lon,lat" (долгота первой). Хотя бы одно из location/regionId
   // нужно 2ГИС для списочного поиска — если не передать ни то, ни другое,

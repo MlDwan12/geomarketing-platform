@@ -4,14 +4,14 @@ export class RegisterDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @IsEmail({}, { message: 'Некорректный email' })
-  email: string;
+  email!: string;
 
   @IsString()
   @MinLength(8, { message: 'Пароль должен быть не менее 8 символов' })
-  password: string;
+  password!: string;
 
   @IsOptional()
   @IsString()

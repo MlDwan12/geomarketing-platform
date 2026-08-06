@@ -4,12 +4,12 @@ export class CreateBrandDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)
-  timezone: string;
+  timezone!: string;
 
   @IsOptional()
   @IsString()

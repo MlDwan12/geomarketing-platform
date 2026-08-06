@@ -23,56 +23,56 @@ export enum UserStatus {
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ length: 100 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', length: 200, nullable: true })
-  fullName: string | null;
+  fullName: string | null = null;
 
   @Column({ length: 254, unique: true })
-  email: string;
+  email!: string;
 
   @Column({ select: false })
-  passwordHash: string;
+  passwordHash!: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.Owner })
-  role: UserRole;
+  role: UserRole = UserRole.Owner;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.Active })
-  status: UserStatus;
+  status: UserStatus = UserStatus.Active;
 
   @Column({ type: 'varchar', length: 30, nullable: true })
-  phone: string | null;
+  phone: string | null = null;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
-  telegram: string | null;
+  telegram: string | null = null;
 
   @Column({ default: false })
-  twoFaEnabled: boolean;
+  twoFaEnabled: boolean = false;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  avatarUrl: string | null;
+  avatarUrl: string | null = null;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
-  timezone: string | null;
+  timezone: string | null = null;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
-  locale: string | null;
+  locale: string | null = null;
 
   @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
-  refCode: string | null;
+  refCode: string | null = null;
 
   @Column({ type: 'varchar', nullable: true })
-  referredById: string | null;
+  referredById: string | null = null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  lastLoginAt: Date | null;
+  lastLoginAt: Date | null = null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

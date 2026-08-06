@@ -11,23 +11,23 @@ import { UserRole, UserStatus } from '../user/user.entity';
 @Unique(['userId', 'brandId'])
 export class UserBrand {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  userId: string;
+  userId!: string;
 
   @Column({ type: 'uuid' })
-  brandId: string;
+  brandId!: string;
 
   @Column({ type: 'enum', enum: UserRole })
-  role: UserRole;
+  role!: UserRole;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.Active })
-  status: UserStatus;
+  status: UserStatus = UserStatus.Active;
 
   @CreateDateColumn()
-  joinedAt: Date;
+  joinedAt!: Date;
 
   @Column({ type: 'timestamptz', nullable: true })
-  lastLoginAt: Date | null;
+  lastLoginAt: Date | null = null;
 }

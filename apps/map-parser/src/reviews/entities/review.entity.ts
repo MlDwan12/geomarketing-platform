@@ -11,16 +11,16 @@ import {
 @Index(['source', 'externalReviewId'], { unique: true })
 export class ReviewEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  companyId: string;
+  companyId!: string;
 
   @Column()
-  source: 'YANDEX' | 'GIS';
+  source!: 'YANDEX' | 'GIS';
 
   @Column()
-  externalReviewId: string;
+  externalReviewId!: string;
 
   @Column({ nullable: true })
   authorName?: string;
@@ -38,8 +38,8 @@ export class ReviewEntity {
   raw?: unknown;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

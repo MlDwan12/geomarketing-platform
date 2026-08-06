@@ -12,7 +12,7 @@ import {
 export class SearchYandexPlacesDto {
   @IsString()
   @IsNotEmpty()
-  q: string;
+  q!: string;
 
   // Формат Яндекса: "lon,lat" (долгота первой), как location у 2ГИС.
   @IsOptional()
