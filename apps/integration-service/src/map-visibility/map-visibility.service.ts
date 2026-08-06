@@ -1,18 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { TwoGisPlacesService } from '../two-gis/two-gis-places.service';
 import { YandexPlacesService } from '../yandex/yandex-places.service';
-import {
-  normalizeTwoGisItem,
-  normalizeYandexItem,
-  NormalizedPlace,
-} from '../places-search/normalize';
-import {
-  CompanyRef,
-  matchesCompany,
-  MatchConfidence,
-} from './visibility-match';
+import { NormalizedPlace } from '../places-search/normalize';
+import { findOwnListing, MapProviderKey } from '../common/own-listing-finder';
+import { CompanyRef, MatchConfidence } from './visibility-match';
 
-export type MapProviderKey = '2gis' | 'yandex';
+export type { MapProviderKey };
 
 export interface ProviderVisibility {
   visible: boolean;
@@ -71,17 +64,17 @@ export class MapVisibilityService {
     provider: MapProviderKey,
   ): Promise<ProviderVisibility> {
     try {
-      const candidates = await this.searchCandidates(company, provider);
+      const match = await findOwnListing(company, provider, {
+        twoGis: this.twoGis,
+        yandex: this.yandex,
+      });
 
-      for (const candidate of candidates) {
-        const match = matchesCompany(company, candidate);
-        if (match.matched) {
-          return {
-            visible: true,
-            matchedItem: candidate,
-            confidence: match.confidence,
-          };
-        }
+      if (match) {
+        return {
+          visible: true,
+          matchedItem: match.matchedItem,
+          confidence: match.confidence,
+        };
       }
 
       return { visible: false };
@@ -91,29 +84,5 @@ export class MapVisibilityService {
         error: e instanceof Error ? e.message : String(e),
       };
     }
-  }
-
-  private async searchCandidates(
-    company: CompanyRef,
-    provider: MapProviderKey,
-  ): Promise<NormalizedPlace[]> {
-    const location = company.coordinates
-      ? `${company.coordinates[0]},${company.coordinates[1]}`
-      : undefined;
-
-    if (provider === '2gis') {
-      const result = await this.twoGis.searchPlaces({
-        query: company.name,
-        location,
-        fields: ['point', 'contact_groups', 'rubrics'],
-      });
-      return result.items.map(normalizeTwoGisItem);
-    }
-
-    const result = await this.yandex.searchPlaces({
-      query: company.name,
-      ll: location,
-    });
-    return result.items.map(normalizeYandexItem);
   }
 }
