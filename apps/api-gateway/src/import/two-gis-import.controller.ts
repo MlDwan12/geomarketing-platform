@@ -90,7 +90,7 @@ export class TwoGisImportController {
             ? ([catalog.point.lon, catalog.point.lat] as [number, number])
             : null,
           fieldOverrides: catalog
-            ? toFieldOverrides(normalizeTwoGisCatalogItem(catalog))
+            ? toFieldOverrides(normalizeTwoGisCatalogItem(catalog, branch.name))
             : undefined,
         },
         RPC_TIMEOUT,
@@ -175,7 +175,9 @@ export class TwoGisImportController {
               ? ([catalog.point.lon, catalog.point.lat] as [number, number])
               : null,
             fieldOverrides: catalog
-              ? toFieldOverrides(normalizeTwoGisCatalogItem(catalog))
+              ? toFieldOverrides(
+                  normalizeTwoGisCatalogItem(catalog, branch.name),
+                )
               : undefined,
           },
           RPC_TIMEOUT,

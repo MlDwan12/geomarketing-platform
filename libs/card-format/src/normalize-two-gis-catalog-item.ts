@@ -18,6 +18,7 @@ export type TwoGisCatalogItem = {
 
 export function normalizeTwoGisCatalogItem(
   item: TwoGisCatalogItem,
+  name?: string,
 ): NormalizedCardFields {
   const primary = item.rubrics?.find((r) => r.kind === 'primary');
   const additional = item.rubrics?.filter((r) => r.kind !== 'primary') ?? [];
@@ -40,6 +41,7 @@ export function normalizeTwoGisCatalogItem(
     : undefined;
 
   return {
+    ...(name ? { names: [{ lang: 'ru', val: name }] } : {}),
     ...(mainCategory ? { mainCategory } : {}),
     ...(additional.length
       ? {

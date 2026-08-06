@@ -52,4 +52,14 @@ describe('normalizeTwoGisCatalogItem', () => {
   it('отсутствующие поля не создают пустые ключи в результате', () => {
     expect(normalizeTwoGisCatalogItem({})).toEqual({});
   });
+
+  it('name превращается в names: [{ lang: "ru", val }] (баг: раньше не заполнялось)', () => {
+    expect(normalizeTwoGisCatalogItem({}, 'Кафе Пушкинъ')).toEqual({
+      names: [{ lang: 'ru', val: 'Кафе Пушкинъ' }],
+    });
+  });
+
+  it('без переданного name ключ names не создаётся', () => {
+    expect(normalizeTwoGisCatalogItem({})).not.toHaveProperty('names');
+  });
 });
