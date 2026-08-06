@@ -14,6 +14,12 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { Patterns } from '@geo/contracts';
 import { LoggerService } from '@geo/logger';
@@ -26,9 +32,14 @@ import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { AuthUserSummaryResponseDto } from './dto/auth-user-summary-response.dto';
+import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { SimpleMessageResponseDto } from './dto/simple-message-response.dto';
+import { UpdateAvatarResponseDto } from './dto/update-avatar-response.dto';
 import { SessionGuard } from './guards/session.guard';
 import { sendRpc } from '../common/rpc';
 
+@ApiTags('auth')
 @Controller('auth')
 @UseFilters(RpcExceptionFilter)
 export class AuthController {
@@ -38,6 +49,16 @@ export class AuthController {
     private readonly logger: LoggerService,
   ) {}
 
+  @ApiOperation({
+    summary: 'Вход по email/паролю',
+    description:
+      'При успехе создаёт серверную сессию (cookie `connect.sid`) — ' +
+      'дальнейшие запросы авторизуются этой cookie, отдельный токен в ' +
+      'ответе не возвращается. Лимит 10 попыток/мин на IP.',
+  })
+  @ApiResponse({ status: 200, type: AuthUserSummaryResponseDto })
+  @ApiResponse({ status: 401, description: 'Неверный email или пароль' })
+  @ApiResponse({ status: 429, description: 'Превышен лимит попыток (10/мин)' })
   @Post('login')
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
@@ -68,6 +89,14 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'Регистрация нового пользователя',
+    description:
+      'Создаёт пользователя (роль по умолчанию — owner) и сразу же сессию, ' +
+      'как login. Бренд/компании создаются отдельно после регистрации.',
+  })
+  @ApiResponse({ status: 201, type: AuthUserSummaryResponseDto })
+  @ApiResponse({ status: 429, description: 'Превышен лимит попыток (10/мин)' })
   @Post('register')
   @HttpCode(201)
   @UseGuards(ThrottlerGuard)
@@ -96,6 +125,16 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'Запросить сброс пароля',
+    description:
+      'Всегда отвечает одинаковым нейтральным сообщением независимо от ' +
+      'того, существует ли email — чтобы не палить наличие аккаунта. ' +
+      'Токен сброса сейчас не отправляется письмом (mail-service ещё нет) — ' +
+      'в non-production печатается в лог сервера.',
+  })
+  @ApiResponse({ status: 200, type: SimpleMessageResponseDto })
+  @ApiResponse({ status: 429, description: 'Превышен лимит попыток (10/мин)' })
   @Post('forgot-password')
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
@@ -114,6 +153,14 @@ export class AuthController {
     return { message: 'Если аккаунт существует, письмо отправлено' };
   }
 
+  @ApiOperation({ summary: 'Установить новый пароль по токену сброса' })
+  @ApiResponse({
+    status: 200,
+    description: 'Пустой объект — пароль обновлён',
+    schema: { type: 'object', example: {} },
+  })
+  @ApiResponse({ status: 400, description: 'Токен недействителен/истёк' })
+  @ApiResponse({ status: 429, description: 'Превышен лимит попыток (10/мин)' })
   @Post('reset-password')
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
@@ -126,6 +173,12 @@ export class AuthController {
     return {};
   }
 
+  @ApiOperation({
+    summary: 'Текущий залогиненный пользователь (полный профиль)',
+  })
+  @ApiCookieAuth()
+  @ApiResponse({ status: 200, type: UserProfileResponseDto })
+  @ApiResponse({ status: 401, description: 'Нет активной сессии' })
   @Get('me')
   @UseGuards(SessionGuard)
   me(@CurrentUser() user: { userId: string; role: string }) {
@@ -134,6 +187,13 @@ export class AuthController {
     });
   }
 
+  @ApiOperation({ summary: 'Выход — уничтожает серверную сессию и cookie' })
+  @ApiCookieAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Пустой объект',
+    schema: { type: 'object', example: {} },
+  })
   @Post('logout')
   @HttpCode(200)
   @UseGuards(SessionGuard)
@@ -143,6 +203,14 @@ export class AuthController {
     return {};
   }
 
+  @ApiOperation({ summary: 'Сменить пароль (зная текущий)' })
+  @ApiCookieAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Пустой объект',
+    schema: { type: 'object', example: {} },
+  })
+  @ApiResponse({ status: 400, description: 'Неверный текущий пароль' })
   @Patch('password')
   @HttpCode(200)
   @UseGuards(SessionGuard)
@@ -158,6 +226,11 @@ export class AuthController {
     return {};
   }
 
+  @ApiOperation({
+    summary: 'Частично обновить профиль (только переданные поля)',
+  })
+  @ApiCookieAuth()
+  @ApiResponse({ status: 200, type: UserProfileResponseDto })
   @Patch('profile')
   @UseGuards(SessionGuard)
   updateProfile(
@@ -170,6 +243,13 @@ export class AuthController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Установить URL аватара',
+    description:
+      'Файл сначала загружается через POST /upload/logo, сюда передаётся только его URL.',
+  })
+  @ApiCookieAuth()
+  @ApiResponse({ status: 200, type: UpdateAvatarResponseDto })
   @Patch('avatar')
   @UseGuards(SessionGuard)
   updateAvatar(

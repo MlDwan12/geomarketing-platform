@@ -17,6 +17,15 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import type { Request as ExpressRequest } from 'express';
@@ -27,7 +36,33 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { sendRpc } from '../common/rpc';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import {
+  BrandResponseDto,
+  BrandShortResponseDto,
+} from './dto/brand-response.dto';
 import { existsSync, mkdirSync } from 'fs';
+
+// Общая схема multipart-тела create/update — DTO с обычными полями + опциональный
+// файл логотипа (см. logoInterceptor ниже). Nest не умеет само склеить
+// class-validator DTO с @UploadedFile() в одну Swagger-схему, поэтому описываем
+// вручную через @ApiBody.
+const brandMultipartBody = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', maxLength: 100 },
+    timezone: { type: 'string', description: 'IANA timezone' },
+    description: { type: 'string' },
+    logoUrl: {
+      type: 'string',
+      description: 'Игнорируется, если передан файл logo',
+    },
+    logo: {
+      type: 'string',
+      format: 'binary',
+      description: 'jpeg/png/webp/svg, до 2 МБ',
+    },
+  },
+} as const;
 
 const ALLOWED_MIME = /^image\/(jpeg|png|webp|svg\+xml)$/;
 const mimeToExt: Record<string, string> = {
@@ -66,6 +101,8 @@ const logoInterceptor = FileInterceptor('logo', {
     cb(null, true);
   },
 });
+@ApiTags('brands')
+@ApiCookieAuth()
 @Controller('brands')
 @UseGuards(SessionGuard)
 @UseFilters(RpcExceptionFilter)
@@ -75,6 +112,8 @@ export class BrandsController {
     private readonly coreClient: ClientProxy,
   ) {}
 
+  @ApiOperation({ summary: 'Список брендов текущего пользователя' })
+  @ApiResponse({ status: 200, type: BrandResponseDto, isArray: true })
   @Get()
   list(@CurrentUser() user: { userId: string }) {
     return sendRpc(this.coreClient, Patterns.BRAND_LIST, {
@@ -82,6 +121,10 @@ export class BrandsController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Короткий список брендов для дропдаунов/переключателя',
+  })
+  @ApiResponse({ status: 200, type: BrandShortResponseDto, isArray: true })
   @Get('short')
   listShort(@CurrentUser() user: { userId: string }) {
     return sendRpc(this.coreClient, Patterns.BRAND_LIST_SHORT, {
@@ -89,6 +132,11 @@ export class BrandsController {
     });
   }
 
+  @ApiOperation({ summary: 'Получить бренд по id' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({ status: 200, type: BrandResponseDto })
+  @ApiResponse({ status: 403, description: 'Нет доступа к бренду' })
+  @ApiResponse({ status: 404, description: 'Бренд не найден/удалён' })
   @Get(':id')
   get(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
     return sendRpc(this.coreClient, Patterns.BRAND_GET, {
@@ -97,6 +145,14 @@ export class BrandsController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Создать бренд',
+    description:
+      'Пользователь становится владельцем (ownerId). Слаг генерируется из name.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: brandMultipartBody })
+  @ApiResponse({ status: 201, type: BrandResponseDto })
   @Post()
   @HttpCode(201)
   @UseInterceptors(logoInterceptor)
@@ -117,6 +173,14 @@ export class BrandsController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Удалить бренд (мягко, status=deleted)',
+    description: 'Только владелец (ownerId) может удалить бренд.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({ status: 204, description: 'Удалён' })
+  @ApiResponse({ status: 403, description: 'Не владелец бренда' })
+  @ApiResponse({ status: 404, description: 'Бренд не найден/уже удалён' })
   @Delete(':id')
   @HttpCode(204)
   delete(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
@@ -126,6 +190,12 @@ export class BrandsController {
     });
   }
 
+  @ApiOperation({ summary: 'Частично обновить бренд' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: brandMultipartBody })
+  @ApiResponse({ status: 200, type: BrandResponseDto })
+  @ApiResponse({ status: 404, description: 'Бренд не найден/удалён' })
   @Patch(':id')
   @UseInterceptors(logoInterceptor)
   update(

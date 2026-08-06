@@ -9,6 +9,13 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Patterns } from '@geo/contracts';
 import {
   normalizeTwoGisCatalogItem,
@@ -19,6 +26,10 @@ import { RpcExceptionFilter } from '../filters/rpc-exception.filter';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { sendRpc } from '../common/rpc';
+import {
+  ImportResponseDto,
+  SyncResponseDto,
+} from './dto/two-gis-import-response.dto';
 
 const RPC_TIMEOUT = 10000;
 
@@ -36,6 +47,8 @@ type TwoGisBranch = {
   address_name?: string;
 };
 
+@ApiTags('import')
+@ApiCookieAuth()
 @Controller('import/2gis')
 @UseGuards(SessionGuard)
 @UseFilters(RpcExceptionFilter)
@@ -51,6 +64,32 @@ export class TwoGisImportController {
       this.config.get<string>('MAP_PARSER_URL') ?? 'http://geo-map-parser:3005';
   }
 
+  @ApiOperation({
+    summary:
+      'Импортировать одну организацию 2ГИС (создаёт бренд + все её филиалы)',
+    description:
+      'orgId и данные организации/филиалов берутся из личного кабинета ' +
+      '2ГИС пользователя через map-parser (реверс-инжинирнутый account API, ' +
+      'не публичный Places API). Один POST на один существующий бренд не ' +
+      'предусмотрен — только создание нового бренда из организации.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        orgId: {
+          type: 'string',
+          description: 'id организации в личном кабинете 2ГИС',
+        },
+        timezone: {
+          type: 'string',
+          description: 'IANA timezone, по умолчанию Europe/Moscow',
+        },
+      },
+      required: ['orgId'],
+    },
+  })
+  @ApiResponse({ status: 201, type: ImportResponseDto })
   @Post()
   @HttpCode(201)
   async import(
@@ -101,6 +140,29 @@ export class TwoGisImportController {
     return { brand, companies };
   }
 
+  @ApiOperation({
+    summary: 'Импортировать ВСЕ организации 2ГИС-аккаунта разом',
+    description:
+      'Проходит по всем организациям личного кабинета 2ГИС. Для каждой — ' +
+      'если хотя бы один филиал уже был импортирован раньше (найден по ' +
+      'twoGisOrgId), бренд не создаётся заново, новые филиалы добавляются в ' +
+      'существующий; уже импортированные филиалы попадают в skipped. Для ' +
+      'неактивных организаций (isActive:false) филиалы могут быть ' +
+      'недоступны — тогда импортируется только сам бренд.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        timezone: {
+          type: 'string',
+          description:
+            'IANA timezone для новых брендов, по умолчанию Europe/Moscow',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, type: SyncResponseDto })
   @Post('sync')
   @HttpCode(200)
   async sync(

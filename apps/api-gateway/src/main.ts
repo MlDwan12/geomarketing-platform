@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import { join } from 'path';
@@ -145,6 +146,32 @@ async function bootstrap() {
   // порядок важен: RpcExceptionFilter перед HttpExceptionFilter (более специфичный первый)
   app.useGlobalFilters(new HttpExceptionFilter(), new RpcExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // ── Swagger (OpenAPI) ────────────────────────────────────────────────────
+  // Всегда доступен на /api/docs (внутренний проект, пока нет внешних
+  // пользователей — можно закрыть в prod позже, если понадобится).
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Geomarketing Platform API')
+    .setDescription(
+      'HTTP-API api-gateway для фронтенда. Успешный ответ всегда имеет вид ' +
+        '`{ "success": true, "data": ... }` (см. ResponseInterceptor), ошибка — ' +
+        '`{ "success": false, "error": { "code", "message", "details?" } }` ' +
+        '(см. HttpExceptionFilter/RpcExceptionFilter). Схемы ниже описывают ' +
+        'только форму `data`/`error`, без внешнего конверта. Авторизация — ' +
+        'сессионная cookie (`connect.sid`), выдаётся `POST /auth/login`; ' +
+        'выбор бренда передаётся заголовком `X-Brand-Id`, часовой пояс для ' +
+        'форматирования дат в ответе — заголовком `X-Timezone`.',
+    )
+    .setVersion('0.0.1')
+    .addCookieAuth('connect.sid', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'connect.sid',
+      description: 'Сессионная cookie, выдаётся POST /auth/login',
+    })
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDocument);
 
   // Wait for RabbitMQ connection before accepting traffic so the first login
   // request doesn't hit a timeout while the broker is still connecting.

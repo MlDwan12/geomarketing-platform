@@ -1,9 +1,17 @@
 import { Controller, Get, Headers, Inject, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import {
+  ApiCookieAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Patterns } from '@geo/contracts';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { sendRpc } from '../common/rpc';
+import { CompanyVisibilityCheckResponseDto } from './dto/company-visibility-response.dto';
 
 // Сеть в 50 точек × 2 провайдера — внешние запросы идут батчами по 5
 // (см. MapVisibilityService), может занять десятки секунд.
@@ -16,6 +24,13 @@ type CompanyForVisibility = {
   coordinates: [number, number] | null;
 };
 
+@ApiTags('company-visibility')
+@ApiCookieAuth()
+@ApiHeader({
+  name: 'x-brand-id',
+  required: true,
+  description: 'id текущего бренда',
+})
 @Controller('company-visibility')
 @UseGuards(SessionGuard)
 export class CompanyVisibilityController {
@@ -29,6 +44,14 @@ export class CompanyVisibilityController {
   // GET /company-visibility/check — MapVisibility для всех Company бренда на
   // 2ГИС/Яндексе разом (аудит, без создания/изменения компаний — см.
   // CONTEXT.md, ветка "аудит/выгрузка существующих").
+  @ApiOperation({
+    summary: 'Проверить присутствие всех компаний бренда на 2ГИС/Яндекс',
+    description:
+      'Только чтение (аудит) — ничего не создаёт/не изменяет. Для сети в ' +
+      '50 точек может занять десятки секунд (внешние запросы батчами по 5 ' +
+      'на каждый провайдер).',
+  })
+  @ApiResponse({ status: 200, type: CompanyVisibilityCheckResponseDto })
   @Get('check')
   async check(
     @Headers('x-brand-id') brandId: string,
