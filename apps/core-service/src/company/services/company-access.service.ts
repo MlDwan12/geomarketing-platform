@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Company, CompanyStatus } from '../entities/company.entity';
-import { UserBrand } from '../../brand/user-brand.entity';
+import { BrandRole, UserBrand } from '../../brand/user-brand.entity';
+import { hasMinRole } from '../../common/brand-role.util';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,14 +19,20 @@ export class CompanyAccessService {
     private readonly userBrandRepo: Repository<UserBrand>,
   ) {}
 
-  async assertBrandAccess(brandId: string, userId: string): Promise<void> {
+  async assertBrandAccess(
+    brandId: string,
+    userId: string,
+    minRole: BrandRole = BrandRole.Viewer,
+  ): Promise<UserBrand> {
     const membership = await this.userBrandRepo.findOne({
       where: { brandId, userId },
     });
 
-    if (!membership) {
+    if (!membership || !hasMinRole(membership.role, minRole)) {
       throw new RpcException({ status: 403, message: 'Forbidden' });
     }
+
+    return membership;
   }
 
   async getCompanyOrThrow(idOrSlug: string): Promise<Company> {

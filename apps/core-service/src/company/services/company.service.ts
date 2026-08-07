@@ -16,6 +16,7 @@ import {
 } from '../entities/company-platform.entity';
 import { CompanyGroup } from '../entities/company-group.entity';
 import { CompanyGroupMember } from '../entities/company-group-member.entity';
+import { BrandRole } from '../../brand/user-brand.entity';
 import {
   assembleCardFields as assembleCardFieldsFn,
   resolveForPlatform as resolveForPlatformFn,
@@ -151,7 +152,7 @@ export class CompanyService {
     reviewCount?: number;
     coordinates?: [number, number] | null;
   }) {
-    await this.checkBrandAccess(dto.brandId, dto.userId);
+    await this.checkBrandAccess(dto.brandId, dto.userId, BrandRole.Manager);
 
     // Name: from fieldOverrides.names override, or from template fields, or error
     let resolvedName = dto.name;
@@ -275,7 +276,7 @@ export class CompanyService {
     const company = await this.getCompanyOrThrow(companyId);
     if (company.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Company not found' });
-    await this.checkBrandAccess(brandId, userId);
+    await this.checkBrandAccess(brandId, userId, BrandRole.Owner);
 
     company.status = CompanyStatus.Deleted;
     await this.companyRepo.save(company);
@@ -318,7 +319,7 @@ export class CompanyService {
     const company = await this.getCompanyOrThrow(companyId);
     if (company.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Company not found' });
-    await this.checkBrandAccess(brandId, userId);
+    await this.checkBrandAccess(brandId, userId, BrandRole.Manager);
 
     let def = await this.defaultRepo.findOne({ where: { companyId } });
 
@@ -518,8 +519,12 @@ export class CompanyService {
     return this.access.getCompanyOrThrow(idOrSlug);
   }
 
-  private checkBrandAccess(brandId: string, userId: string): Promise<void> {
-    return this.access.assertBrandAccess(brandId, userId);
+  private async checkBrandAccess(
+    brandId: string,
+    userId: string,
+    minRole: BrandRole = BrandRole.Viewer,
+  ): Promise<void> {
+    await this.access.assertBrandAccess(brandId, userId, minRole);
   }
 
   private async generateSlug(name: string): Promise<string> {
