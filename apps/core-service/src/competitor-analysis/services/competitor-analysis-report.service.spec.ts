@@ -4,6 +4,7 @@ import { CompetitorAnalysisReportService } from './competitor-analysis-report.se
 import { CompetitorAnalysisReport } from '../entities/competitor-analysis-report.entity';
 import { CompanyAccessService } from '../../company/services/company-access.service';
 import { Company } from '../../company/entities/company.entity';
+import { BrandRole } from '../../brand/user-brand.entity';
 
 function fakeAccess(company: Partial<Company> | null) {
   const assertBrandAccess = jest.fn().mockResolvedValue(undefined);
@@ -61,7 +62,11 @@ describe('CompetitorAnalysisReportService', () => {
       ratingComparison: { own: 4.2, avgCompetitor: 4.5 },
     });
 
-    expect(access.assertBrandAccess).toHaveBeenCalledWith('brand-1', 'user-1');
+    expect(access.assertBrandAccess).toHaveBeenCalledWith(
+      'brand-1',
+      'user-1',
+      BrandRole.Manager,
+    );
     expect(access.getCompanyOrThrow).toHaveBeenCalledWith('company-1');
     expect(repo.save).toHaveBeenCalledWith(
       expect.objectContaining({

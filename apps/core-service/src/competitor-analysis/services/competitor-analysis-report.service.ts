@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { CompetitorAnalysisReport } from '../entities/competitor-analysis-report.entity';
 import { CompanyAccessService } from '../../company/services/company-access.service';
+import { BrandRole } from '../../brand/user-brand.entity';
 
 // Только хранение и чтение истории CompetitorAnalysisReport (коммит 1 плана
 // docs/refactor-plans/competitor-analysis-report.md) — поиск конкурентов,
@@ -26,7 +27,12 @@ export class CompetitorAnalysisReportService {
     ratingComparison: Record<string, unknown>;
     textAnalysis?: Record<string, unknown> | null;
   }): Promise<CompetitorAnalysisReport> {
-    await this.checkCompanyAccess(dto.companyId, dto.brandId, dto.userId);
+    await this.checkCompanyAccess(
+      dto.companyId,
+      dto.brandId,
+      dto.userId,
+      BrandRole.Manager,
+    );
 
     return this.reportRepo.save(
       this.reportRepo.create({
@@ -69,8 +75,9 @@ export class CompetitorAnalysisReportService {
     companyId: string,
     brandId: string,
     userId: string,
+    minRole: BrandRole = BrandRole.Viewer,
   ): Promise<void> {
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, minRole);
     const company = await this.access.getCompanyOrThrow(companyId);
 
     if (company.brandId !== brandId) {
