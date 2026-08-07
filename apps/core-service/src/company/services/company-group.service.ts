@@ -6,6 +6,7 @@ import { Company } from '../entities/company.entity';
 import { CompanyGroup } from '../entities/company-group.entity';
 import { CompanyGroupMember } from '../entities/company-group-member.entity';
 import { CompanyAccessService } from './company-access.service';
+import { BrandRole } from '../../brand/user-brand.entity';
 
 @Injectable()
 export class CompanyGroupService {
@@ -72,7 +73,7 @@ export class CompanyGroupService {
     const group = await this.getGroupOrThrow(groupId);
     if (group.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Group not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
 
     if (!companyIds.length) return { groupId, removed: 0 };
 
@@ -89,7 +90,7 @@ export class CompanyGroupService {
     const group = await this.getGroupOrThrow(groupId);
     if (group.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Group not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
 
     if (!companyIds.length) return { groupId, added: 0 };
 
@@ -136,7 +137,11 @@ export class CompanyGroupService {
   }
 
   async createGroup(dto: { brandId: string; userId: string; name: string }) {
-    await this.access.assertBrandAccess(dto.brandId, dto.userId);
+    await this.access.assertBrandAccess(
+      dto.brandId,
+      dto.userId,
+      BrandRole.Manager,
+    );
     return this.groupRepo.save(
       this.groupRepo.create({ brandId: dto.brandId, name: dto.name }),
     );
@@ -151,7 +156,7 @@ export class CompanyGroupService {
     const group = await this.getGroupOrThrow(groupId);
     if (group.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Group not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
     group.name = name;
     return this.groupRepo.save(group);
   }
@@ -160,7 +165,7 @@ export class CompanyGroupService {
     const group = await this.getGroupOrThrow(groupId);
     if (group.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Group not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
     await this.groupRepo.remove(group);
     return null;
   }
@@ -174,7 +179,7 @@ export class CompanyGroupService {
     const company = await this.access.getCompanyOrThrow(companyId);
     if (company.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Company not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
 
     if (groupIds.length) {
       const validGroups = await this.groupRepo.find({
