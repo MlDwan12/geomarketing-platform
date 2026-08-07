@@ -49,6 +49,12 @@
       ],
       "@geo/logger/*": [
         "libs/logger/src/*"
+      ],
+      "@geo/mailer": [
+        "libs/mailer/src"
+      ],
+      "@geo/mailer/*": [
+        "libs/mailer/src/*"
       ]
     }
   }
