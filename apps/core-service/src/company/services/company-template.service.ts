@@ -6,6 +6,7 @@ import { Company } from '../entities/company.entity';
 import { CompanyDefault } from '../entities/company-default.entity';
 import { CompanyTemplate } from '../entities/company-template.entity';
 import { CompanyAccessService } from './company-access.service';
+import { BrandRole } from '../../brand/user-brand.entity';
 
 @Injectable()
 export class CompanyTemplateService {
@@ -89,7 +90,11 @@ export class CompanyTemplateService {
     name: string;
     fields: Record<string, unknown>;
   }) {
-    await this.access.assertBrandAccess(dto.brandId, dto.userId);
+    await this.access.assertBrandAccess(
+      dto.brandId,
+      dto.userId,
+      BrandRole.Manager,
+    );
     return this.templateRepo.save(
       this.templateRepo.create({
         brandId: dto.brandId,
@@ -113,7 +118,7 @@ export class CompanyTemplateService {
       throw new RpcException({ status: 404, message: 'Template not found' });
     }
 
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
     Object.assign(template, dto);
     return this.templateRepo.save(template);
   }
@@ -127,7 +132,7 @@ export class CompanyTemplateService {
       throw new RpcException({ status: 404, message: 'Template not found' });
     }
 
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
 
     // Detach companies before deleting so they don't lose their data
     await this.defaultRepo.update({ templateId }, { templateId: null });
