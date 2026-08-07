@@ -74,7 +74,6 @@ export class AuthController {
     }
 
     req.session.userId = user.id;
-    req.session.role = user.role;
     await new Promise<void>((resolve, reject) =>
       req.session.save((err: unknown) => (err ? reject(err) : resolve())),
     );
@@ -83,7 +82,6 @@ export class AuthController {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
       avatarUrl: user.avatarUrl ?? null,
       lastLoginAt: user.lastLoginAt,
     };
@@ -92,8 +90,8 @@ export class AuthController {
   @ApiOperation({
     summary: 'Регистрация нового пользователя',
     description:
-      'Создаёт пользователя (роль по умолчанию — owner) и сразу же сессию, ' +
-      'как login. Бренд/компании создаются отдельно после регистрации.',
+      'Создаёт пользователя и сразу же сессию, как login. Бренд/компании ' +
+      'создаются отдельно после регистрации.',
   })
   @ApiResponse({ status: 201, type: AuthUserSummaryResponseDto })
   @ApiResponse({ status: 429, description: 'Превышен лимит попыток (10/мин)' })
@@ -110,7 +108,6 @@ export class AuthController {
     });
 
     req.session.userId = user.id;
-    req.session.role = user.role;
     await new Promise<void>((resolve, reject) =>
       req.session.save((err: unknown) => (err ? reject(err) : resolve())),
     );
@@ -119,7 +116,6 @@ export class AuthController {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
       avatarUrl: user.avatarUrl ?? null,
       lastLoginAt: user.lastLoginAt,
     };
@@ -181,7 +177,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Нет активной сессии' })
   @Get('me')
   @UseGuards(SessionGuard)
-  me(@CurrentUser() user: { userId: string; role: string }) {
+  me(@CurrentUser() user: { userId: string }) {
     return sendRpc(this.coreClient, Patterns.USER_GET_PROFILE, {
       userId: user.userId,
     });

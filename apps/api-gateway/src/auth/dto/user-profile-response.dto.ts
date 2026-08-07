@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Форма ответа core-service USER_GET_PROFILE/USER_UPDATE_PROFILE — полная
 // сущность User (кроме passwordHash, у неё select:false на уровне TypeORM).
-// Роль/статус — локальные копии значений enum core-service (UserRole/
-// UserStatus), не импортируются напрямую — микросервисы не делят типы
-// (см. company-visibility.controller.ts, тот же принцип).
+// Статус — локальная копия значений enum core-service (UserStatus), не
+// импортируется напрямую — микросервисы не делят типы (см.
+// company-visibility.controller.ts, тот же принцип).
 export class UserProfileResponseDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -17,9 +17,6 @@ export class UserProfileResponseDto {
 
   @ApiProperty({ format: 'email' })
   email!: string;
-
-  @ApiProperty({ enum: ['owner', 'admin', 'manager', 'viewer'] })
-  role!: string;
 
   @ApiProperty({ enum: ['active', 'suspended', 'left', 'pending'] })
   status!: string;

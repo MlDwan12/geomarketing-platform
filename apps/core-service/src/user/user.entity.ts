@@ -6,13 +6,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum UserRole {
-  Owner = 'owner',
-  Admin = 'admin',
-  Manager = 'manager',
-  Viewer = 'viewer',
-}
-
 export enum UserStatus {
   Active = 'active',
   Suspended = 'suspended',
@@ -36,9 +29,6 @@ export class User {
 
   @Column({ select: false })
   passwordHash!: string;
-
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.Owner })
-  role: UserRole = UserRole.Owner;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.Active })
   status: UserStatus = UserStatus.Active;

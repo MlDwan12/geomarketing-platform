@@ -12,9 +12,6 @@ export class AuthUserSummaryResponseDto {
   @ApiProperty({ format: 'email' })
   email!: string;
 
-  @ApiProperty({ enum: ['owner', 'admin', 'manager', 'viewer'] })
-  role!: string;
-
   @ApiProperty({ nullable: true, type: String })
   avatarUrl!: string | null;
 

@@ -5,7 +5,6 @@ export const CurrentUser = createParamDecorator(
     const req = ctx.switchToHttp().getRequest();
     return {
       userId: req.session.userId as string,
-      role: req.session.role as string,
     };
   },
 );
