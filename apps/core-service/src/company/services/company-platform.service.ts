@@ -8,6 +8,7 @@ import {
   PlatformStatus,
 } from '../entities/company-platform.entity';
 import { CompanyAccessService } from './company-access.service';
+import { BrandRole } from '../../brand/user-brand.entity';
 
 @Injectable()
 export class CompanyPlatformService {
@@ -34,7 +35,7 @@ export class CompanyPlatformService {
     const company = await this.access.getCompanyOrThrow(companyId);
     if (company.brandId !== brandId)
       throw new RpcException({ status: 404, message: 'Company not found' });
-    await this.access.assertBrandAccess(brandId, userId);
+    await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
 
     let platform = await this.platformRepo.findOne({
       where: { companyId, platformKey },
