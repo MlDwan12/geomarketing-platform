@@ -17,6 +17,7 @@ import { PlacesSearchModule } from './integrations/places-search/places-search.m
 import { CompanyVisibilityModule } from './company-visibility/company-visibility.module';
 import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analysis.module';
 import { UploadModule } from './upload/upload.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { UploadModule } from './upload/upload.module';
     CompanyVisibilityModule,
     CompetitorAnalysisModule,
     UploadModule,
+    TeamModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
