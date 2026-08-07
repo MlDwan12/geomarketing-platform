@@ -3,9 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Brand, BrandStatus } from './brand.entity';
-import { UserBrand } from './user-brand.entity';
-import { UserRole, UserStatus } from '../user/user.entity';
+import { BrandRole, UserBrand } from './user-brand.entity';
+import { UserStatus } from '../user/user.entity';
 import { isUniqueViolation } from '../common/unique-violation.util';
+import { hasMinRole } from '../common/brand-role.util';
 
 // DB-002: тот же паттерн гонки, что и в CompanyService.generateSlug —
 // см. комментарий там.
@@ -46,13 +47,7 @@ export class BrandService {
       throw new RpcException({ status: 404, message: 'Brand not found' });
     }
 
-    const hasAccess =
-      brand.ownerId === userId ||
-      !!(await this.userBrandRepo.findOne({ where: { brandId, userId } }));
-
-    if (!hasAccess) {
-      throw new RpcException({ status: 403, message: 'Forbidden' });
-    }
+    await this.assertBrandAccess(brandId, userId);
 
     return brand;
   }
@@ -95,7 +90,7 @@ export class BrandService {
       this.userBrandRepo.create({
         userId: dto.userId,
         brandId: brand.id,
-        role: UserRole.Owner,
+        role: BrandRole.Owner,
         status: UserStatus.Active,
         lastLoginAt: null,
       }),
@@ -111,9 +106,7 @@ export class BrandService {
       throw new RpcException({ status: 404, message: 'Brand not found' });
     }
 
-    if (brand.ownerId !== userId) {
-      throw new RpcException({ status: 403, message: 'Only owner can delete brand' });
-    }
+    await this.assertBrandAccess(brandId, userId, BrandRole.Owner);
 
     brand.status = BrandStatus.Deleted;
     await this.brandRepo.save(brand);
@@ -135,9 +128,7 @@ export class BrandService {
       throw new RpcException({ status: 404, message: 'Brand not found' });
     }
 
-    if (brand.ownerId !== dto.userId) {
-      throw new RpcException({ status: 403, message: 'Only owner can update brand' });
-    }
+    await this.assertBrandAccess(brandId, dto.userId, BrandRole.Owner);
 
     const { userId: _, ...fields } = dto;
 
@@ -160,6 +151,26 @@ export class BrandService {
         throw err;
       }
     }
+  }
+
+  // Та же логика, что CompanyAccessService.assertBrandAccess в company-модуле —
+  // не переиспользуем напрямую, чтобы не тянуть межмодульную зависимость
+  // BrandModule -> CompanyModule ради одной проверки (см. docs/refactor-plans/
+  // team-brand-roles.md, коммит 9).
+  private async assertBrandAccess(
+    brandId: string,
+    userId: string,
+    minRole: BrandRole = BrandRole.Viewer,
+  ): Promise<UserBrand> {
+    const membership = await this.userBrandRepo.findOne({
+      where: { brandId, userId },
+    });
+
+    if (!membership || !hasMinRole(membership.role, minRole)) {
+      throw new RpcException({ status: 403, message: 'Forbidden' });
+    }
+
+    return membership;
   }
 
   private async generateSlug(name: string): Promise<string> {

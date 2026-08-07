@@ -10,6 +10,7 @@ import { PasswordResetModule } from './password-reset/password-reset.module';
 import { BrandModule } from './brand/brand.module';
 import { CompanyModule } from './company/company.module';
 import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analysis.module';
+import { TeamModule } from './team/team.module';
 import { RpcExceptionFilter } from './rpc-exception.filter';
 import { CorrelationIdInterceptor } from './correlation-id.interceptor';
 import { Init1750000000000 } from './migrations/1750000000000-Init';
@@ -21,6 +22,9 @@ import { AddCompanyGroups1750000005000 } from './migrations/1750000005000-AddCom
 import { AddIndexes1750000006000 } from './migrations/1750000006000-AddIndexes';
 import { AddCompanyCoordinates1750000007000 } from './migrations/1750000007000-AddCompanyCoordinates';
 import { AddCompetitorAnalysisReports1750000008000 } from './migrations/1750000008000-AddCompetitorAnalysisReports';
+import { NarrowUserBrandsRole1750000009000 } from './migrations/1750000009000-NarrowUserBrandsRole';
+import { DropUserRole1750000010000 } from './migrations/1750000010000-DropUserRole';
+import { AddTeamInvitations1750000011000 } from './migrations/1750000011000-AddTeamInvitations';
 
 @Module({
   imports: [
@@ -45,6 +49,9 @@ import { AddCompetitorAnalysisReports1750000008000 } from './migrations/17500000
           AddIndexes1750000006000,
           AddCompanyCoordinates1750000007000,
           AddCompetitorAnalysisReports1750000008000,
+          NarrowUserBrandsRole1750000009000,
+          DropUserRole1750000010000,
+          AddTeamInvitations1750000011000,
         ],
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -54,6 +61,7 @@ import { AddCompetitorAnalysisReports1750000008000 } from './migrations/17500000
     BrandModule,
     CompanyModule,
     CompetitorAnalysisModule,
+    TeamModule,
   ],
   controllers: [CoreServiceController],
   providers: [
