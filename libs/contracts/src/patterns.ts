@@ -58,10 +58,13 @@ export const Patterns = {
   PLATFORM_SUMMARY:       'platform.summary',
 
   // Team
-  TEAM_LIST_USERS:        'team.listUsers',
-  TEAM_INVITE:            'team.invite',
-  TEAM_INVITATION_LIST:   'team.invitationList',
-  TEAM_INVITATION_REVOKE: 'team.invitationRevoke',
+  TEAM_LIST_USERS:          'team.listUsers',
+  TEAM_INVITE:              'team.invite',
+  TEAM_INVITATION_LIST:     'team.invitationList',
+  TEAM_INVITATION_REVOKE:   'team.invitationRevoke',
+  TEAM_MEMBER_UPDATE_ROLE:  'team.member.updateRole',
+  TEAM_MEMBER_REMOVE:       'team.member.remove',
+  TEAM_INVITATION_ACCEPT:   'team.invitation.accept',
 
   // Billing
   BILLING_SUMMARY:        'billing.summary',
