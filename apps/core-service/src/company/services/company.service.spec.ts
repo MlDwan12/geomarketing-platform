@@ -3,6 +3,8 @@ import { RpcException } from '@nestjs/microservices';
 import { CompanyService } from './company.service';
 import { CompanyAccessService } from './company-access.service';
 import { Company, CompanyStatus } from '../entities/company.entity';
+import { CompanyTemplate } from '../entities/company-template.entity';
+import { CompanyGroup } from '../entities/company-group.entity';
 import { BrandRole } from '../../brand/user-brand.entity';
 
 const FORBIDDEN = new RpcException({ status: 403, message: 'Forbidden' });
@@ -30,14 +32,16 @@ function fakeAccess(
 function makeService(
   access: CompanyAccessService,
   companySave: jest.Mock = jest.fn().mockResolvedValue(undefined),
+  templateRepo: Partial<Repository<CompanyTemplate>> = {},
+  groupRepo: Partial<Repository<CompanyGroup>> = {},
 ) {
   const companyRepo = { save: companySave } as unknown as Repository<Company>;
   return new CompanyService(
     companyRepo,
     {} as never,
+    templateRepo as Repository<CompanyTemplate>,
     {} as never,
-    {} as never,
-    {} as never,
+    groupRepo as Repository<CompanyGroup>,
     {} as never,
     {} as never,
     access,
@@ -91,6 +95,48 @@ describe('CompanyService — ролевые проверки', () => {
       'user-1',
       BrandRole.Manager,
     );
+  });
+
+  it('create(): SEC-008 — отклоняет templateId из другого бренда', async () => {
+    const access = fakeAccess(null);
+    const templateRepo = {
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ id: 'tpl-1', brandId: 'other-brand' }),
+    };
+    const service = makeService(access.service, undefined, templateRepo);
+
+    await expect(
+      service.create({
+        brandId: 'brand-1',
+        userId: 'user-1',
+        name: 'Кафе',
+        templateId: 'tpl-1',
+      }),
+    ).rejects.toThrow(RpcException);
+  });
+
+  it('create(): SEC-008 — отклоняет groups[].id из другого бренда', async () => {
+    const access = fakeAccess(null);
+    const groupRepo = {
+      // Группа существует, но не в этом бренде — find по {id, brandId} её не находит.
+      find: jest.fn().mockResolvedValue([]),
+    };
+    const service = makeService(
+      access.service,
+      undefined,
+      undefined,
+      groupRepo,
+    );
+
+    await expect(
+      service.create({
+        brandId: 'brand-1',
+        userId: 'user-1',
+        name: 'Кафе',
+        groups: [{ id: 'g1' }],
+      }),
+    ).rejects.toThrow(RpcException);
   });
 
   it('updateDefault(): требует минимум BrandRole.Manager', async () => {

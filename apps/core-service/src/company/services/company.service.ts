@@ -153,6 +153,7 @@ export class CompanyService {
     coordinates?: [number, number] | null;
   }) {
     await this.checkBrandAccess(dto.brandId, dto.userId, BrandRole.Manager);
+    await this.assertOwnershipForCreate(dto);
 
     // Name: from fieldOverrides.names override, or from template fields, or error
     let resolvedName = dto.name;
@@ -190,6 +191,42 @@ export class CompanyService {
           continue;
         }
         throw err;
+      }
+    }
+  }
+
+  // SEC-008: insertCompany() писал dto.templateId/dto.groups[].id без сверки
+  // brandId (в отличие от уже существующей проверки в addCompaniesToGroup/
+  // updateCompanyGroups) — компания могла привязаться к чужому шаблону/группе
+  // из другого бренда. Проверяем владение до вставки чего-либо в транзакцию.
+  private async assertOwnershipForCreate(
+    dto: Parameters<CompanyService['create']>[0],
+  ): Promise<void> {
+    if (dto.templateId) {
+      const template = await this.templateRepo.findOne({
+        where: { id: dto.templateId },
+      });
+      if (!template || template.brandId !== dto.brandId) {
+        throw new RpcException({
+          status: 400,
+          message: 'templateId не найден или принадлежит другому бренду',
+        });
+      }
+    }
+
+    const existingGroupIds = (dto.groups ?? [])
+      .filter((g) => g.id)
+      .map((g) => g.id!);
+
+    if (existingGroupIds.length) {
+      const validGroups = await this.groupRepo.find({
+        where: { id: In(existingGroupIds), brandId: dto.brandId },
+      });
+      if (validGroups.length !== new Set(existingGroupIds).size) {
+        throw new RpcException({
+          status: 400,
+          message: 'Один или несколько groups[].id принадлежат другому бренду',
+        });
       }
     }
   }
