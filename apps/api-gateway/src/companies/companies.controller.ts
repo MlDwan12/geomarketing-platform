@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -63,6 +64,15 @@ const createCompanyBody = {
     },
     code: { type: 'string' },
     twoGisOrgId: { type: 'string' },
+    addressDisplay: { type: 'string', nullable: true },
+    coordinates: {
+      type: 'array',
+      items: { type: 'number' },
+      minItems: 2,
+      maxItems: 2,
+      description: '[lon, lat] — для проверки присутствия на 2ГИС/Яндекс',
+      nullable: true,
+    },
   },
   additionalProperties: {
     type: 'object',
@@ -129,15 +139,36 @@ export class CompaniesController {
     @Body() body: Record<string, unknown>,
     @CurrentUser() user: { userId: string },
   ) {
-    const { status, templateId, groups, code, twoGisOrgId, ...rawFields } =
-      body as {
-        status?: string;
-        templateId?: string | null;
-        groups?: { id: string }[];
-        code?: string;
-        twoGisOrgId?: string;
-        [key: string]: unknown;
-      };
+    const {
+      status,
+      templateId,
+      groups,
+      code,
+      twoGisOrgId,
+      addressDisplay,
+      coordinates,
+      ...rawFields
+    } = body as {
+      status?: string;
+      templateId?: string | null;
+      groups?: { id: string }[];
+      code?: string;
+      twoGisOrgId?: string;
+      addressDisplay?: string | null;
+      coordinates?: [number, number] | null;
+      [key: string]: unknown;
+    };
+
+    if (
+      coordinates != null &&
+      (!Array.isArray(coordinates) ||
+        coordinates.length !== 2 ||
+        !coordinates.every((c) => typeof c === 'number' && Number.isFinite(c)))
+    ) {
+      throw new BadRequestException(
+        'coordinates должны быть массивом [lon, lat] из двух чисел',
+      );
+    }
 
     const namesField = rawFields.names as
       | { default: { val: string }[] }
@@ -153,6 +184,8 @@ export class CompaniesController {
       templateId: templateId ?? null,
       code,
       twoGisOrgId,
+      addressDisplay: addressDisplay ?? null,
+      coordinates: coordinates ?? null,
       groups: groups ?? [],
       fieldOverrides,
     });

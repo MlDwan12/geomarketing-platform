@@ -43,6 +43,8 @@ export class CompanyController {
       templateId?: string;
       groups?: { id?: string; name?: string }[];
       fieldOverrides?: FieldOverrides;
+      addressDisplay?: string | null;
+      coordinates?: [number, number] | null;
     },
   ) {
     return this.companyService.create(dto);
