@@ -259,8 +259,20 @@ export class TwoGisImportController {
     };
   }
 
+  // SEC-009: map-parser отклоняет запросы без совпадающего заголовка
+  // (см. InternalTokenGuard) — единственный внутренний сервис, вызываемый
+  // по обычному HTTP, а не через RabbitMQ.
+  private internalHeaders(): Record<string, string> {
+    return {
+      'X-Internal-Token':
+        this.config.get<string>('MAP_PARSER_INTERNAL_TOKEN') ?? '',
+    };
+  }
+
   private async fetchAllOrgs(): Promise<TwoGisOrg[]> {
-    const res = await fetch(`${this.mapParserUrl}/2gis/account/orgs`);
+    const res = await fetch(`${this.mapParserUrl}/2gis/account/orgs`, {
+      headers: this.internalHeaders(),
+    });
 
     if (!res.ok) {
       throw new Error(`Failed to fetch orgs: ${res.status}`);
@@ -283,7 +295,7 @@ export class TwoGisImportController {
 
   private async fetchBranches(orgId: string): Promise<TwoGisBranch[]> {
     const url = `${this.mapParserUrl}/2gis/account/branches?orgId=${orgId}&per_page=200`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: this.internalHeaders() });
 
     if (!res.ok) {
       throw new Error(`Failed to fetch branches: ${res.status}`);
@@ -299,6 +311,7 @@ export class TwoGisImportController {
     try {
       const res = await fetch(
         `${this.mapParserUrl}/2gis/account/branch/${branchId}`,
+        { headers: this.internalHeaders() },
       );
       if (!res.ok) return null;
       const data = (await res.json()) as {

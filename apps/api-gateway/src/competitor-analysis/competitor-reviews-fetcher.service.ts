@@ -40,7 +40,11 @@ export class CompetitorReviewsFetcherService {
     try {
       const res = await fetch(`${this.mapParserUrl}/parser/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token':
+            this.config.get<string>('MAP_PARSER_INTERNAL_TOKEN') ?? '',
+        },
         body: JSON.stringify({
           companyId: companyIdLabel,
           orgId,

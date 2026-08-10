@@ -29,6 +29,10 @@ x-app-env: &app-env
   # SEC-005: креды берутся из тех же RABBITMQ_DEFAULT_USER/PASS, что заданы
   # ниже для самого rabbitmq — раньше здесь было захардкожено guest:guest.
   RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672
+  # SEC-009: map-parser — единственный внутренний сервис, вызываемый по
+  # обычному HTTP (не через RabbitMQ). Общий токен для api-gateway↔map-parser,
+  # ОБЯЗАТЕЛЬНО сменить в production.
+  MAP_PARSER_INTERNAL_TOKEN: ${MAP_PARSER_INTERNAL_TOKEN:-dev-internal-token-change-in-prod}
 
 # Переменные для сервисов с доступом к БД
 x-db-env: &db-env
@@ -210,8 +214,11 @@ services:
     <<: *service-defaults
     container_name: geo-map-parser
     image: map-parser-local:latest
-    ports:
-      - "${MAP_PARSER_PORT:-3005}:${MAP_PARSER_PORT:-3005}"
+    # SEC-009: раньше единственный внутренний сервис с портом, торчащим на
+    # хост, — без единой авторизации это давало SSRF (twoGisUrl → page.goto())
+    # и незащищённую запись в реальный аккаунт 2ГИС кому угодно снаружи.
+    # Вызывается только из api-gateway внутри geo-net (см. MAP_PARSER_URL) —
+    # публикация на хост не нужна.
     dns:
       - 1.1.1.1
     environment:

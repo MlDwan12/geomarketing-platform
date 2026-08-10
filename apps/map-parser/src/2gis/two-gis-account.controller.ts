@@ -5,10 +5,13 @@ import {
   Param,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ContactUpdate, TwoGisAccountService } from './two-gis-account.service';
+import { InternalTokenGuard } from '../common/internal-token.guard';
 
 @Controller('2gis/account')
+@UseGuards(InternalTokenGuard)
 export class TwoGisAccountController {
   constructor(private readonly account: TwoGisAccountService) {}
 

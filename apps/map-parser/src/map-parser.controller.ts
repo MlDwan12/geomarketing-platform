@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { YandexParserService } from './yandex-parser/yandex-parser.service';
 import { MapParserService } from './map-parser.service';
 import { TwoGisParserService } from './two-gis-parser/two-gis-parser.service';
+import { InternalTokenGuard } from './common/internal-token.guard';
 
 @Controller('parser')
+@UseGuards(InternalTokenGuard)
 export class MapParserController {
   constructor(
     private readonly parser: YandexParserService,

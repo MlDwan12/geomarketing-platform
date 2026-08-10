@@ -61,6 +61,8 @@ export class TwoGisParserService {
       params.branchId ?? this.extractBranchId(params.twoGisUrl);
 
     try {
+      this.assertAllowedTwoGisUrl(params.twoGisUrl);
+
       this.logger.log('========================================');
       this.logger.log('START 2GIS PLAYWRIGHT + API PARSING');
       this.logger.log(`Company ID: ${params.companyId}`);
@@ -182,6 +184,26 @@ export class TwoGisParserService {
       if (browser) {
         await browser.close();
       }
+    }
+  }
+
+  // SEC-009: twoGisUrl приходит от вызывающего сервиса без валидации и раньше
+  // напрямую шёл в page.goto() headless-браузера — SSRF с полным контролем
+  // хоста/протокола. Разрешаем только https-адреса на 2gis.ru/поддоменах.
+  private assertAllowedTwoGisUrl(rawUrl: string): void {
+    let parsed: URL;
+
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      throw new Error(`Invalid twoGisUrl: ${rawUrl}`);
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    const isAllowedHost = host === '2gis.ru' || host.endsWith('.2gis.ru');
+
+    if (parsed.protocol !== 'https:' || !isAllowedHost) {
+      throw new Error(`twoGisUrl host/protocol not allowed: ${rawUrl}`);
     }
   }
 
