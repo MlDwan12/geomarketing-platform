@@ -25,8 +25,10 @@ x-service-defaults: &service-defaults
 # Переменные, общие для всех app-сервисов
 x-app-env: &app-env
   NODE_ENV: ${NODE_ENV:-development}
-  # Переопределяем URL с localhost на Docker-имена сервисов
-  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+  # Переопределяем URL с localhost на Docker-имена сервисов.
+  # SEC-005: креды берутся из тех же RABBITMQ_DEFAULT_USER/PASS, что заданы
+  # ниже для самого rabbitmq — раньше здесь было захардкожено guest:guest.
+  RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672
 
 # Переменные для сервисов с доступом к БД
 x-db-env: &db-env
@@ -84,9 +86,18 @@ services:
     restart: unless-stopped
     networks:
       - geo-net
+    environment:
+      # SEC-005: раньше креды нигде не переопределялись — контейнер и все
+      # клиенты (см. x-app-env выше) молча жили на дефолтном guest:guest.
+      # ОБЯЗАТЕЛЬНО сменить в production (задать в .env).
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
     ports:
-      - "5672:5672"    # AMQP — для подключения сервисов
-      - "15672:15672"  # Management UI — http://localhost:15672 (guest/guest)
+      # SEC-005: биндим на 127.0.0.1, а не 0.0.0.0 — порты нужны только для
+      # локальной разработки (нативные `nest start`, Management UI с этой же
+      # машины), наружу в сеть быть видны не должны.
+      - "127.0.0.1:5672:5672"    # AMQP — для подключения сервисов
+      - "127.0.0.1:15672:15672" # Management UI — http://localhost:15672
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       # Без тома очереди и exchange сбрасываются при рестарте
