@@ -16,6 +16,15 @@ export class NarrowUserBrandsRole1750000009000 implements MigrationInterface {
       `CREATE TYPE "public"."user_brands_role_enum_new" AS ENUM('owner', 'manager', 'viewer')`,
     );
 
+    // Некоторые окружения унаследовали DEFAULT на "role" от раннего
+    // synchronize:true (ни сущность, ни AddBrands-миграция дефолт не
+    // объявляют) — Postgres не может автоматически привести такой DEFAULT
+    // к новому типу enum при ALTER COLUMN TYPE. Снимаем его перед сменой
+    // типа; если дефолта нет — команда безопасно ничего не делает.
+    await queryRunner.query(
+      `ALTER TABLE "user_brands" ALTER COLUMN "role" DROP DEFAULT`,
+    );
+
     await queryRunner.query(`
       ALTER TABLE "user_brands"
       ALTER COLUMN "role" TYPE "public"."user_brands_role_enum_new"
