@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { Queues } from '@geo/contracts';
+import { LoggerModule } from '@geo/logger';
 import { MailerModule } from '@geo/mailer';
 import { TeamController } from './team.controller';
 
 @Module({
   imports: [
+    LoggerModule,
     MailerModule,
     ClientsModule.registerAsync([
       {
