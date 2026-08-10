@@ -39,6 +39,8 @@ import {
   PaginatedCompaniesResponseDto,
   UpdateCompanyGroupsResponseDto,
 } from './dto/company-response.dto';
+import { UpdateCompanyDefaultDto } from './dto/update-company-default.dto';
+import { UpdateCompanyPlatformDto } from './dto/update-company-platform.dto';
 
 // Динамический JSON-объект карточки на входе create() — форма { fieldKey: { default: value } },
 // см. buildFieldOverrides ниже. Набор ключей зависит от шаблона бренда, поэтому
@@ -252,26 +254,13 @@ export class CompaniesController {
       'fields мержится на уровне отдельных полей — непереданные ключи не трогаются.',
   })
   @ApiParam({ name: 'id', description: 'id или slug компании' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        templateId: { type: 'string', format: 'uuid', nullable: true },
-        fields: {
-          type: 'object',
-          additionalProperties: true,
-          description: 'Форма { fieldKey: { value, isException? } }',
-        },
-      },
-    },
-  })
+  @ApiBody({ type: UpdateCompanyDefaultDto })
   @ApiResponse({ status: 200, type: CompanyCardDto })
   @Patch(':id/default')
   updateDefault(
     @Param('id') id: string,
     @Headers('x-brand-id') brandId: string,
-    @Body()
-    dto: { templateId?: string | null; fields?: Record<string, unknown> },
+    @Body() dto: UpdateCompanyDefaultDto,
     @CurrentUser() user: { userId: string },
   ) {
     return sendRpc(this.coreClient, Patterns.COMPANY_DEFAULT_UPDATE, {
@@ -345,28 +334,14 @@ export class CompaniesController {
   })
   @ApiParam({ name: 'id', description: 'id или slug компании' })
   @ApiParam({ name: 'platformKey', description: 'напр. "2gis", "yandex"' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        isEnabled: { type: 'boolean' },
-        orgId: { type: 'string', nullable: true },
-        orgName: { type: 'string', nullable: true },
-      },
-    },
-  })
+  @ApiBody({ type: UpdateCompanyPlatformDto })
   @ApiResponse({ status: 200, type: CompanyPlatformResponseDto })
   @Patch(':id/platforms/:platformKey')
   updatePlatform(
     @Param('id') id: string,
     @Param('platformKey') platformKey: string,
     @Headers('x-brand-id') brandId: string,
-    @Body()
-    dto: {
-      isEnabled?: boolean;
-      orgId?: string | null;
-      orgName?: string | null;
-    },
+    @Body() dto: UpdateCompanyPlatformDto,
     @CurrentUser() user: { userId: string },
   ) {
     return sendRpc(this.coreClient, Patterns.COMPANY_PLATFORM_UPDATE, {

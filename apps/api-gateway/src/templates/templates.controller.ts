@@ -33,6 +33,7 @@ import {
   TemplateShortResponseDto,
   TemplateStatsResponseDto,
 } from './dto/template-response.dto';
+import { UpdateTemplateDto } from './dto/update-template.dto';
 
 const templateFieldsBodySchema = {
   type: 'object',
@@ -144,22 +145,14 @@ export class TemplatesController {
       'fields, если передан, заменяет весь объект целиком (не мержится по ключам, в отличие от PATCH /companies/:id/default).',
   })
   @ApiParam({ name: 'id', format: 'uuid' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        fields: templateFieldsBodySchema,
-      },
-    },
-  })
+  @ApiBody({ type: UpdateTemplateDto })
   @ApiResponse({ status: 200, type: TemplateEntityResponseDto })
   @ApiResponse({ status: 404, description: 'Шаблон не найден/другой бренд' })
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Headers('x-brand-id') brandId: string,
-    @Body() dto: { name?: string; fields?: Record<string, unknown> },
+    @Body() dto: UpdateTemplateDto,
     @CurrentUser() user: { userId: string },
   ) {
     return sendRpc(this.coreClient, Patterns.TEMPLATE_UPDATE, {
