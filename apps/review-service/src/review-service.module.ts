@@ -9,6 +9,7 @@ import { MapParserClientService } from './map-parser-client/map-parser-client.se
 import { ReviewsController } from './reviews/reviews.controller';
 import { ReviewRefreshService } from './reviews/review-refresh.service';
 import { ReviewListService } from './reviews/review-list.service';
+import { ReviewBrandDashboardService } from './reviews/review-brand-dashboard.service';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ReviewListService } from './reviews/review-list.service';
     MapParserClientService,
     ReviewRefreshService,
     ReviewListService,
+    ReviewBrandDashboardService,
   ],
 })
 export class ReviewServiceModule {}

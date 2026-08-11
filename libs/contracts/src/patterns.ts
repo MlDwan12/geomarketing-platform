@@ -106,6 +106,10 @@ export const Patterns = {
   // Коммит 5: чтение уже сохранённых отзывов + агрегаты (total/unanswered/
   // averageRating, отдельно по источнику и суммарно). Не триггерит скрапинг.
   REVIEW_LIST_FOR_COMPANY: 'review.listForCompany',
+  // Коммит 6: read-only дашборд на весь бренд — агрегаты по каждой компании
+  // + сумма неотвеченных по всей сети. Не триггерит скрапинг (см. коммит 4
+  // для обновления одной компании).
+  REVIEW_BRAND_DASHBOARD: 'review.brandDashboard',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
