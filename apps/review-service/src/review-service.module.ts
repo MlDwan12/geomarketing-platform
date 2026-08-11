@@ -8,6 +8,7 @@ import { AppConfigModule } from '@geo/config';
 import { MapParserClientService } from './map-parser-client/map-parser-client.service';
 import { ReviewsController } from './reviews/reviews.controller';
 import { ReviewRefreshService } from './reviews/review-refresh.service';
+import { ReviewListService } from './reviews/review-list.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ReviewRefreshService } from './reviews/review-refresh.service';
     ReviewServiceService,
     MapParserClientService,
     ReviewRefreshService,
+    ReviewListService,
   ],
 })
 export class ReviewServiceModule {}

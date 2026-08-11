@@ -103,6 +103,9 @@ export const Patterns = {
   // Коммит 4: скрапинг+сохранение отзывов одной компании на подключённых
   // платформах (2ГИС/Яндекс), партиальный успех на уровне платформы.
   REVIEW_REFRESH_COMPANY: 'review.refreshCompany',
+  // Коммит 5: чтение уже сохранённых отзывов + агрегаты (total/unanswered/
+  // averageRating, отдельно по источнику и суммарно). Не триггерит скрапинг.
+  REVIEW_LIST_FOR_COMPANY: 'review.listForCompany',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
