@@ -18,6 +18,7 @@ import { CompanyVisibilityModule } from './company-visibility/company-visibility
 import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analysis.module';
 import { UploadModule } from './upload/upload.module';
 import { TeamModule } from './team/team.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { TeamModule } from './team/team.module';
     CompetitorAnalysisModule,
     UploadModule,
     TeamModule,
+    ReviewsModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],
