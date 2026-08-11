@@ -119,7 +119,8 @@ export class CompanyTemplateService {
     }
 
     await this.access.assertBrandAccess(brandId, userId, BrandRole.Manager);
-    Object.assign(template, dto);
+    if (dto.name !== undefined) template.name = dto.name;
+    if (dto.fields !== undefined) template.fields = dto.fields;
     return this.templateRepo.save(template);
   }
 

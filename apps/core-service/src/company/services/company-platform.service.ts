@@ -55,7 +55,10 @@ export class CompanyPlatformService {
       });
     }
 
-    Object.assign(platform, dto);
+    if (dto.isEnabled !== undefined) platform.isEnabled = dto.isEnabled;
+    if (dto.orgId !== undefined) platform.orgId = dto.orgId;
+    if (dto.orgName !== undefined) platform.orgName = dto.orgName;
+    if (dto.status !== undefined) platform.status = dto.status;
 
     if (dto.orgId && !platform.connectedAt) {
       platform.connectedAt = new Date();

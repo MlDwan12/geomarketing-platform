@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
 import { UserService } from './user.service';
+import { User } from './user.entity';
 
 @Controller()
 export class UserController {
@@ -23,9 +24,33 @@ export class UserController {
   }
 
   @MessagePattern(Patterns.USER_UPDATE_PROFILE)
-  updateProfile(@Payload() payload: { userId: string; [key: string]: unknown }) {
-    const { userId, ...dto } = payload;
-    return this.userService.updateProfile(userId, dto as any);
+  updateProfile(
+    @Payload()
+    payload: {
+      userId: string;
+      name?: string;
+      fullName?: string;
+      phone?: string;
+      telegram?: string;
+      timezone?: string;
+      locale?: string;
+    },
+  ) {
+    const { userId, name, fullName, phone, telegram, timezone, locale } =
+      payload;
+    const dto: Partial<
+      Pick<
+        User,
+        'name' | 'fullName' | 'phone' | 'telegram' | 'timezone' | 'locale'
+      >
+    > = {};
+    if (name !== undefined) dto.name = name;
+    if (fullName !== undefined) dto.fullName = fullName;
+    if (phone !== undefined) dto.phone = phone;
+    if (telegram !== undefined) dto.telegram = telegram;
+    if (timezone !== undefined) dto.timezone = timezone;
+    if (locale !== undefined) dto.locale = locale;
+    return this.userService.updateProfile(userId, dto);
   }
 
   @MessagePattern(Patterns.USER_UPDATE_AVATAR)

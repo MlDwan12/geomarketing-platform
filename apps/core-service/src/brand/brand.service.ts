@@ -130,7 +130,14 @@ export class BrandService {
 
     await this.assertBrandAccess(brandId, dto.userId, BrandRole.Owner);
 
-    const { userId: _, ...fields } = dto;
+    const fields: Pick<
+      typeof dto,
+      'name' | 'timezone' | 'description' | 'logoUrl'
+    > = {};
+    if (dto.name !== undefined) fields.name = dto.name;
+    if (dto.timezone !== undefined) fields.timezone = dto.timezone;
+    if (dto.description !== undefined) fields.description = dto.description;
+    if (dto.logoUrl !== undefined) fields.logoUrl = dto.logoUrl;
 
     if (!fields.name || fields.name === brand.name) {
       Object.assign(brand, fields);
