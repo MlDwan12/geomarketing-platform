@@ -3,6 +3,12 @@ import { YandexParserService } from './yandex-parser/yandex-parser.service';
 import { MapParserService } from './map-parser.service';
 import { TwoGisParserService } from './two-gis-parser/two-gis-parser.service';
 import { InternalTokenGuard } from './common/internal-token.guard';
+import {
+  mapTwoGisReviewToEntity,
+  mapYandexReviewToEntity,
+} from './reviews/map-review';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { ReviewEntity } from './reviews/entities/review.entity';
 
 @Controller('parser')
 @UseGuards(InternalTokenGuard)
@@ -14,7 +20,7 @@ export class MapParserController {
   ) {}
 
   @Post('reviews')
-  parseReviews(
+  async parseReviews(
     @Body()
     body: {
       companyId: string;
@@ -23,7 +29,20 @@ export class MapParserController {
       saveToDb?: boolean;
     },
   ) {
-    return this.parser.parseReviews(body);
+    const result = await this.parser.parseReviews(body);
+
+    if (body.saveToDb && result.reviews?.length) {
+      await this.mapParserService.upsertReviews(
+        result.reviews
+          .map((review) => mapYandexReviewToEntity(body.companyId, review))
+          .filter(
+            (entity): entity is QueryDeepPartialEntity<ReviewEntity> =>
+              entity !== null,
+          ),
+      );
+    }
+
+    return result;
   }
 
   @Get('reviews/:companyId')
@@ -32,7 +51,7 @@ export class MapParserController {
   }
 
   @Post('2gis/reviews')
-  parseTwoGisReviews(
+  async parseTwoGisReviews(
     @Body()
     body: {
       companyId: string;
@@ -42,6 +61,19 @@ export class MapParserController {
       saveToDb?: boolean;
     },
   ) {
-    return this.twoGisParser.parseReviews(body);
+    const result = await this.twoGisParser.parseReviews(body);
+
+    if (body.saveToDb && result.reviews?.length) {
+      await this.mapParserService.upsertReviews(
+        result.reviews
+          .map((review) => mapTwoGisReviewToEntity(body.companyId, review))
+          .filter(
+            (entity): entity is QueryDeepPartialEntity<ReviewEntity> =>
+              entity !== null,
+          ),
+      );
+    }
+
+    return result;
   }
 }

@@ -34,6 +34,12 @@ export class ReviewEntity {
   @Column({ type: 'timestamp', nullable: true })
   publishedAt?: Date;
 
+  @Column({ type: 'text', nullable: true })
+  answer?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  answerPublishedAt?: Date;
+
   @Column({ type: 'jsonb', nullable: true })
   raw?: unknown;
 
