@@ -41,6 +41,9 @@ async function bootstrap() {
 
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads',
+    setHeaders: (res: Response) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
   });
 
   // Correlation-id: переиспользуем клиентский заголовок или генерируем новый,

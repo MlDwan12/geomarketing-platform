@@ -22,7 +22,7 @@ import type { Request as ExpressRequest } from 'express';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { UploadResponseDto } from './dto/upload-response.dto';
 
-const ALLOWED_MIME = /^image\/(jpeg|png|webp|svg\+xml)$/;
+const ALLOWED_MIME = /^image\/(jpeg|png|webp)$/;
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
 @ApiTags('upload')
@@ -43,7 +43,7 @@ export class UploadController {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'jpeg/png/webp/svg, до 2 МБ',
+          description: 'jpeg/png/webp, до 2 МБ',
         },
       },
     },
@@ -67,7 +67,7 @@ export class UploadController {
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME.test(file.mimetype)) {
           cb(
-            new BadRequestException('Допустимые форматы: jpeg, png, webp, svg'),
+            new BadRequestException('Допустимые форматы: jpeg, png, webp'),
             false,
           );
           return;

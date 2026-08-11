@@ -59,17 +59,16 @@ const brandMultipartBody = {
     logo: {
       type: 'string',
       format: 'binary',
-      description: 'jpeg/png/webp/svg, до 2 МБ',
+      description: 'jpeg/png/webp, до 2 МБ',
     },
   },
 } as const;
 
-const ALLOWED_MIME = /^image\/(jpeg|png|webp|svg\+xml)$/;
+const ALLOWED_MIME = /^image\/(jpeg|png|webp)$/;
 const mimeToExt: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
-  'image/svg+xml': '.svg',
 };
 
 const uploadPath = join(process.cwd(), 'uploads');
@@ -93,7 +92,7 @@ const logoInterceptor = FileInterceptor('logo', {
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_MIME.test(file.mimetype)) {
       return cb(
-        new BadRequestException('Допустимые форматы: jpeg, png, webp, svg'),
+        new BadRequestException('Допустимые форматы: jpeg, png, webp'),
         false,
       );
     }
