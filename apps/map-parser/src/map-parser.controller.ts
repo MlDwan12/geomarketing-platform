@@ -19,6 +19,15 @@ export class MapParserController {
     private readonly twoGisParser: TwoGisParserService,
   ) {}
 
+  @Get('ping')
+  ping() {
+    return {
+      service: 'map-parser',
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post('reviews')
   async parseReviews(
     @Body()

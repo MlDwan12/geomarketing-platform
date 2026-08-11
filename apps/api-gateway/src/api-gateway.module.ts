@@ -5,6 +5,7 @@ import { AppConfigModule } from '@geo/config';
 import { Queues } from '@geo/contracts';
 import { ApiGatewayController } from './api-gateway.controller';
 import { ApiGatewayService } from './api-gateway.service';
+import { HealthService } from './health/health.service';
 import { AuthModule } from './auth/auth.module';
 import { BrandsModule } from './brands/brands.module';
 import { CompaniesModule } from './companies/companies.module';
@@ -37,6 +38,50 @@ import { ReviewsModule } from './reviews/reviews.module';
           },
         }),
       },
+      // Только для агрегированного GET /health (см. ApiGatewayController) —
+      // остальные HTTP-эндпоинты, которым эти сервисы нужны по делу,
+      // регистрируют свои собственные клиенты в своих модулях
+      // (CompetitorAnalysisModule, ReviewsModule и т.д.), это отдельные
+      // соединения.
+      {
+        name: 'INTEGRATION_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL')!],
+            queue: Queues.INTEGRATION,
+            queueOptions: { durable: true },
+          },
+        }),
+      },
+      {
+        name: 'AI_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL')!],
+            queue: Queues.AI,
+            queueOptions: { durable: true },
+          },
+        }),
+      },
+      {
+        name: 'REVIEW_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL')!],
+            queue: Queues.REVIEW,
+            queueOptions: { durable: true },
+          },
+        }),
+      },
     ]),
     AuthModule,
     BrandsModule,
@@ -54,6 +99,6 @@ import { ReviewsModule } from './reviews/reviews.module';
     ReviewsModule,
   ],
   controllers: [ApiGatewayController],
-  providers: [ApiGatewayService],
+  providers: [ApiGatewayService, HealthService],
 })
 export class ApiGatewayModule {}
