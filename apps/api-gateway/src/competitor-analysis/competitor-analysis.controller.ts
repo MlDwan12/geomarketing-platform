@@ -1,4 +1,11 @@
-import { Controller, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiHeader,
@@ -12,6 +19,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CompetitorAnalysisOrchestratorService } from './competitor-analysis-orchestrator.service';
 import {
   BrandGenerationResultDto,
+  CompetitorAnalysisReportDto,
   SavedCompetitorAnalysisReportDto,
 } from './dto/competitor-analysis-response.dto';
 
@@ -76,5 +84,24 @@ export class CompetitorAnalysisController {
       brandId,
       user.userId,
     );
+  }
+
+  // GET /competitor-analysis/:companyId/latest — прочитать уже сохранённый
+  // отчёт (последнюю версию), без повторной генерации.
+  @ApiOperation({
+    summary: 'Последний сохранённый отчёт по конкурентам для компании',
+    description:
+      'Ничего не генерирует заново — читает последнюю по createdAt запись. ' +
+      'null, если отчётов для компании ещё нет.',
+  })
+  @ApiParam({ name: 'companyId', format: 'uuid' })
+  @ApiResponse({ status: 200, type: CompetitorAnalysisReportDto })
+  @Get(':companyId/latest')
+  getLatest(
+    @Param('companyId') companyId: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.orchestrator.getLatestReport(companyId, brandId, user.userId);
   }
 }

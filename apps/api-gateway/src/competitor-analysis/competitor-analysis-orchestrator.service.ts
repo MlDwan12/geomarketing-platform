@@ -14,6 +14,13 @@ const RPC_TIMEOUT = 30000;
 // разом.
 const BRAND_BATCH_CONCURRENCY = 5;
 
+// Скрапинг отзывов каждого конкурента поднимает отдельный headless Chromium
+// в map-parser (Playwright — реальный OS-процесс, не поток). Без лимита
+// Promise.all запускал их все разом (до 5) — живьём поймали OOM-killer на
+// этом (см. REFACTORING_LOG.md/память сессии 2026-08-11). 2 — компромисс
+// между скоростью и памятью на типичной dev-машине.
+const COMPETITOR_REVIEWS_CONCURRENCY = 2;
+
 interface PlaceSourceRef {
   provider: '2gis' | 'yandex';
   id: string;
@@ -54,6 +61,16 @@ interface CompetitorInsights {
 export interface SavedCompetitorAnalysisReport {
   id: string;
   companyId: string;
+  createdAt: string;
+}
+
+export interface CompetitorAnalysisReportDetails {
+  id: string;
+  companyId: string;
+  competitors: unknown[];
+  cardComparison: Record<string, unknown>;
+  ratingComparison: Record<string, unknown>;
+  textAnalysis: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -126,26 +143,26 @@ export class CompetitorAnalysisOrchestratorService {
       ? await this.fetchReviewTexts(company.id, ownYandexOrgId)
       : [];
 
-    const competitorProfiles = await Promise.all(
-      competitors.map(async (c) => {
-        const yandexOrgId = this.findYandexSourceId(c.sources);
-        const reviews = yandexOrgId
-          ? await this.fetchReviewTexts(
-              `competitor:${yandexOrgId}`,
-              yandexOrgId,
-            )
-          : [];
+    const competitorProfiles: Array<{
+      name: string;
+      hasPhone: boolean;
+      category: string | undefined;
+      rating: number | undefined;
+      reviewCount: number | undefined;
+      reviews: string[];
+    }> = [];
 
-        return {
-          name: c.name,
-          hasPhone: Boolean(c.phone),
-          category: c.categories?.[0],
-          rating: c.rating,
-          reviewCount: c.reviewCount,
-          reviews,
-        };
-      }),
-    );
+    for (
+      let i = 0;
+      i < competitors.length;
+      i += COMPETITOR_REVIEWS_CONCURRENCY
+    ) {
+      const batch = competitors.slice(i, i + COMPETITOR_REVIEWS_CONCURRENCY);
+      const batchProfiles = await Promise.all(
+        batch.map((c) => this.buildCompetitorProfile(c)),
+      );
+      competitorProfiles.push(...batchProfiles);
+    }
 
     const own = {
       hasPhone: this.hasPhone(company.card.fields),
@@ -173,6 +190,22 @@ export class CompetitorAnalysisOrchestratorService {
         ratingComparison: insights.ratingComparison,
         textAnalysis: insights.textAnalysis,
       },
+      RPC_TIMEOUT,
+    );
+  }
+
+  // GET /competitor-analysis/:companyId/latest — читает последний уже
+  // сохранённый отчёт (core-service.CompetitorAnalysisReportService.getLatest,
+  // RPC-паттерн был готов с коммита 1 плана, но не пробрасывался наружу HTTP).
+  async getLatestReport(
+    companyId: string,
+    brandId: string,
+    userId: string,
+  ): Promise<CompetitorAnalysisReportDetails | null> {
+    return sendRpc<CompetitorAnalysisReportDetails | null>(
+      this.coreClient,
+      Patterns.COMPETITOR_ANALYSIS_GET_LATEST,
+      { companyId, brandId, userId },
       RPC_TIMEOUT,
     );
   }
@@ -222,6 +255,22 @@ export class CompetitorAnalysisOrchestratorService {
         error: err instanceof Error ? err.message : String(err),
       };
     }
+  }
+
+  private async buildCompetitorProfile(c: CompetitorListingRef) {
+    const yandexOrgId = this.findYandexSourceId(c.sources);
+    const reviews = yandexOrgId
+      ? await this.fetchReviewTexts(`competitor:${yandexOrgId}`, yandexOrgId)
+      : [];
+
+    return {
+      name: c.name,
+      hasPhone: Boolean(c.phone),
+      category: c.categories?.[0],
+      rating: c.rating,
+      reviewCount: c.reviewCount,
+      reviews,
+    };
   }
 
   private findYandexSourceId(

@@ -169,6 +169,120 @@ describe('CompetitorAnalysisOrchestratorService.generateForCompany', () => {
     const aiCall = ai.send.mock.calls[0][1] as { own: { hasPhone: boolean } };
     expect(aiCall.own.hasPhone).toBe(false);
   });
+
+  it('скрапинг отзывов конкурентов идёт пачками по COMPETITOR_REVIEWS_CONCURRENCY=2 — не все Chromium разом', async () => {
+    const competitors = Array.from({ length: 5 }, (_, i) => ({
+      name: `Конкурент ${i}`,
+      phone: undefined,
+      categories: ['Кафе'],
+      rating: 4,
+      reviewCount: 5,
+      sources: [
+        { provider: 'yandex' as const, id: `yandex-org-${i}`, raw: {} },
+      ],
+    }));
+
+    const core = fakeClient({
+      [Patterns.COMPANY_GET]: { ...companyGetResult, card: { fields: {} } },
+      [Patterns.COMPETITOR_ANALYSIS_SAVE]: { id: 'report-concurrency' },
+    });
+    const integration = fakeClient({
+      [Patterns.MAP_VISIBILITY_CHECK]: [
+        {
+          companyId: 'company-1',
+          byProvider: { yandex: { matchedItem: undefined } },
+        },
+      ],
+      [Patterns.COMPETITOR_LISTINGS_FIND]: competitors,
+    });
+    const ai = fakeClient({
+      [Patterns.AI_COMPETITOR_ANALYSIS_GENERATE]: {
+        cardComparison: {},
+        ratingComparison: {},
+        textAnalysis: null,
+      },
+    });
+
+    let current = 0;
+    let maxConcurrent = 0;
+    const fetchYandexReviews = jest.fn().mockImplementation(async () => {
+      current += 1;
+      maxConcurrent = Math.max(maxConcurrent, current);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      current -= 1;
+      return [];
+    });
+    const reviewsFetcher = {
+      fetchYandexReviews,
+    } as unknown as CompetitorReviewsFetcherService;
+
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      integration.client,
+      ai.client,
+      reviewsFetcher,
+    );
+
+    await orchestrator.generateForCompany('company-1', 'brand-1', 'user-1');
+
+    expect(fetchYandexReviews).toHaveBeenCalledTimes(5);
+    expect(maxConcurrent).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('CompetitorAnalysisOrchestratorService.getLatestReport', () => {
+  it('читает последний сохранённый отчёт через COMPETITOR_ANALYSIS_GET_LATEST', async () => {
+    const savedReport = {
+      id: 'report-1',
+      companyId: 'company-1',
+      competitors: [],
+      cardComparison: {},
+      ratingComparison: {},
+      textAnalysis: null,
+      createdAt: '2026-08-11T16:50:55.000Z',
+    };
+    const core = fakeClient({
+      [Patterns.COMPETITOR_ANALYSIS_GET_LATEST]: savedReport,
+    });
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      {} as unknown as ClientProxy,
+      {} as unknown as ClientProxy,
+      fakeReviewsFetcher({}).service,
+    );
+
+    const result = await orchestrator.getLatestReport(
+      'company-1',
+      'brand-1',
+      'user-1',
+    );
+
+    expect(result).toEqual(savedReport);
+    expect(core.send).toHaveBeenCalledWith(
+      Patterns.COMPETITOR_ANALYSIS_GET_LATEST,
+      { companyId: 'company-1', brandId: 'brand-1', userId: 'user-1' },
+    );
+  });
+
+  it('нет отчётов для компании — возвращает null', async () => {
+    const core = fakeClient({
+      [Patterns.COMPETITOR_ANALYSIS_GET_LATEST]: null,
+    });
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      {} as unknown as ClientProxy,
+      {} as unknown as ClientProxy,
+      fakeReviewsFetcher({}).service,
+    );
+
+    const result = await orchestrator.getLatestReport(
+      'company-1',
+      'brand-1',
+      'user-1',
+    );
+
+    expect(result).toBeNull();
+  });
 });
 
 describe('CompetitorAnalysisOrchestratorService.generateForBrand', () => {

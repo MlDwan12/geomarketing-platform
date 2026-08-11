@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-06-25",
+  "__export_date": "2026-08-11",
   "__export_source": "geomarketing-platform",
   "resources": [
     {
@@ -9,10 +9,9 @@
       "_type": "workspace",
       "parentId": null,
       "name": "Geomarketing Platform",
-      "description": "API коллекция для geomarketing-platform (api-gateway :3000, map-parser :3005)",
+      "description": "API коллекция для geomarketing-platform (api-gateway :3000, map-parser :3005). Обновлено 2026-08-11 — добавлены Team, Places Search, Company Visibility, Competitor Analysis, Reviews; учтён SEC-009 (map-parser внутренний токен) и SEC-010 (SVG убран из upload).",
       "scope": "collection"
     },
-
     {
       "_id": "env_geo_base",
       "_type": "environment",
@@ -21,6 +20,7 @@
       "data": {
         "base_url": "http://localhost:3000",
         "parser_url": "http://localhost:3005",
+        "parser_internal_token": "dev-internal-token-change-in-prod",
         "test_email": "test@example.com",
         "test_password": "password123",
         "reset_token": "",
@@ -31,12 +31,15 @@
         "group_id": "",
         "twogis_org_id": "70000001056220281",
         "twogis_branch_id": "70000001056220282",
+        "review_branch_id_no_answers": "70000001057432436",
+        "review_branch_id_with_answers": "70000001027072965",
+        "invitation_token": "",
+        "invite_email": "coworker@example.com",
         "test_stand": "https://esotericmir.online/api"
       },
       "color": "#4CAF50",
       "isPrivate": false
     },
-
     {
       "_id": "jar_geo",
       "_type": "cookie_jar",
@@ -44,7 +47,6 @@
       "name": "Default Jar",
       "cookies": []
     },
-
     {
       "_id": "fld_health",
       "_type": "request_group",
@@ -52,7 +54,6 @@
       "name": "Health",
       "description": "Проверка состояния api-gateway и core-service."
     },
-
     {
       "_id": "req_health",
       "_type": "request",
@@ -65,7 +66,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_health_core",
       "_type": "request",
@@ -78,7 +78,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_auth",
       "_type": "request_group",
@@ -86,7 +85,6 @@
       "name": "Auth",
       "description": "Регистрация, логин, профиль, сброс пароля. Сессия хранится в куке connect.sid — Insomnia передаёт её автоматически через cookie jar."
     },
-
     {
       "_id": "req_register",
       "_type": "request",
@@ -99,11 +97,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Иван Петров\",\n  \"email\": \"{{ test_email }}\",\n  \"password\": \"{{ test_password }}\",\n  \"referralCode\": \"\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_login",
       "_type": "request",
@@ -116,11 +118,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"{{ test_email }}\",\n  \"password\": \"{{ test_password }}\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_me",
       "_type": "request",
@@ -134,7 +140,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_update_profile",
       "_type": "request",
@@ -147,11 +152,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Иван Петров\",\n  \"phone\": \"+79001234567\",\n  \"timezone\": \"Europe/Moscow\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_update_avatar",
       "_type": "request",
@@ -164,11 +173,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"avatarUrl\": \"https://cdn.example.com/avatars/user-123.jpg\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_change_password",
       "_type": "request",
@@ -181,11 +194,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"currentPassword\": \"{{ test_password }}\",\n  \"newPassword\": \"newpassword456\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_forgot_password",
       "_type": "request",
@@ -198,11 +215,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"{{ test_email }}\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_reset_password",
       "_type": "request",
@@ -215,11 +236,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"token\": \"{{ reset_token }}\",\n  \"password\": \"newpassword789\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_logout",
       "_type": "request",
@@ -233,7 +258,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_brands",
       "_type": "request_group",
@@ -241,7 +265,6 @@
       "name": "Brands",
       "description": "CRUD брендов. Все ручки требуют активной сессии."
     },
-
     {
       "_id": "req_brands_list",
       "_type": "request",
@@ -255,7 +278,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_brands_list_short",
       "_type": "request",
@@ -269,7 +291,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_brands_get",
       "_type": "request",
@@ -283,7 +304,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_brands_create",
       "_type": "request",
@@ -291,16 +311,33 @@
       "name": "Create Brand",
       "method": "POST",
       "url": "{{ base_url }}/brands",
-      "description": "Создаёт бренд, генерирует slug. Автоматически создаёт user_brands с ролью owner.",
+      "description": "Создаёт бренд, генерирует slug. Автоматически создаёт user_brands с ролью owner.\n\nВАЖНО: тело — multipart/form-data (не raw JSON), даже без файла лого — так устроен api-gateway (logo — опциональный binary-файл в том же запросе).",
       "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Мой бренд\",\n  \"timezone\": \"Europe/Moscow\",\n  \"description\": \"Описание бренда\"\n}"
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "name",
+            "value": "Мой бренд"
+          },
+          {
+            "name": "timezone",
+            "value": "Europe/Moscow"
+          },
+          {
+            "name": "description",
+            "value": "Описание бренда"
+          },
+          {
+            "name": "logo",
+            "type": "file",
+            "disabled": true
+          }
+        ]
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_brands_update",
       "_type": "request",
@@ -308,16 +345,33 @@
       "name": "Update Brand",
       "method": "PATCH",
       "url": "{{ base_url }}/brands/{{ brand_id }}",
-      "description": "Обновляет поля бренда. Только owner.",
+      "description": "Обновляет поля бренда. Только owner. Тоже multipart/form-data, все поля опциональны.",
       "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"name\": \"Новое название\",\n  \"description\": \"Описание\",\n  \"timezone\": \"Europe/Moscow\"\n}"
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "name",
+            "value": "Новое название"
+          },
+          {
+            "name": "description",
+            "value": "Описание"
+          },
+          {
+            "name": "timezone",
+            "value": "Europe/Moscow"
+          },
+          {
+            "name": "logo",
+            "type": "file",
+            "disabled": true
+          }
+        ]
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_brands_delete",
       "_type": "request",
@@ -331,7 +385,6 @@
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_groups",
       "_type": "request_group",
@@ -339,7 +392,6 @@
       "name": "Groups",
       "description": "CRUD групп компаний (филиалов). Группы принадлежат бренду. Все запросы требуют X-Brand-Id и активной сессии."
     },
-
     {
       "_id": "req_groups_list",
       "_type": "request",
@@ -349,11 +401,21 @@
       "url": "{{ base_url }}/groups",
       "description": "Короткий список групп бренда [{ id, name }] — для дропдаунов. Поддерживает ?search=.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
-      "parameters": [{ "name": "search", "value": "", "disabled": true }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "value": "",
+          "disabled": true
+        }
+      ],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_stats",
       "_type": "request",
@@ -363,11 +425,21 @@
       "url": "{{ base_url }}/groups/stats",
       "description": "Группы бренда с кол. компаний [{ id, name, brandId, companiesCount }]. Поддерживает ?search=.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
-      "parameters": [{ "name": "search", "value": "", "disabled": true }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "search",
+          "value": "",
+          "disabled": true
+        }
+      ],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_create",
       "_type": "request",
@@ -381,13 +453,18 @@
         "text": "{\n  \"name\": \"Флагманы\"\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_get",
       "_type": "request",
@@ -397,11 +474,15 @@
       "url": "{{ base_url }}/groups/{{ group_id }}",
       "description": "Конкретная группа. Возвращает:\n{\n  id, name, companiesCount,\n  companies: [{ id, name }]\n}",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_add_companies",
       "_type": "request",
@@ -415,13 +496,18 @@
         "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_remove_companies",
       "_type": "request",
@@ -435,13 +521,18 @@
         "text": "{\n  \"companyIds\": [\"{{ company_id }}\"]\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_update",
       "_type": "request",
@@ -455,13 +546,18 @@
         "text": "{\n  \"name\": \"Флагманские точки\"\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_groups_delete",
       "_type": "request",
@@ -471,11 +567,15 @@
       "url": "{{ base_url }}/groups/{{ group_id }}",
       "description": "Удаляет группу. Все привязки компаний к группе удаляются каскадно. Возвращает 204.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_templates",
       "_type": "request_group",
@@ -483,7 +583,6 @@
       "name": "Templates",
       "description": "Шаблоны карточек на уровне бренда. Все запросы требуют X-Brand-Id и активной сессии."
     },
-
     {
       "_id": "req_templates_list",
       "_type": "request",
@@ -493,11 +592,15 @@
       "url": "{{ base_url }}/templates",
       "description": "Короткий список шаблонов бренда [{ id, name }] — для дропдаунов.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_templates_list_stats",
       "_type": "request",
@@ -507,11 +610,15 @@
       "url": "{{ base_url }}/templates/stats",
       "description": "Шаблоны бренда с кол. компаний [{ id, name, brandId, companiesCount }].",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_templates_get",
       "_type": "request",
@@ -521,11 +628,15 @@
       "url": "{{ base_url }}/templates/{{ template_id }}",
       "description": "Шаблон с полями и списком компаний. Возвращает: { id, name, fields, companiesCount, companies: [{ id, name, slug }] }",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_templates_create",
       "_type": "request",
@@ -539,13 +650,18 @@
         "text": "{\n  \"name\": \"Основной шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" },\n        { \"lang\": \"en\", \"val\": \"Aroma Coffee\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    },\n    \"schedule\": {\n      \"default\": {\n        \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n        \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n        \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n      }\n    },\n    \"mainCategory\": {\n      \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n    },\n    \"descriptions\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Сеть уютных кофеен\" }\n      ]\n    }\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_templates_update",
       "_type": "request",
@@ -559,13 +675,18 @@
         "text": "{\n  \"name\": \"Обновлённый шаблон\",\n  \"fields\": {\n    \"names\": {\n      \"default\": [\n        { \"lang\": \"ru\", \"val\": \"Новое название\" }\n      ]\n    },\n    \"phones\": {\n      \"default\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ]\n    }\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_templates_delete",
       "_type": "request",
@@ -575,11 +696,15 @@
       "url": "{{ base_url }}/templates/{{ template_id }}",
       "description": "Удаляет шаблон. Компании отвязываются (templateId → null), данные не теряются. Возвращает 204.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_companies",
       "_type": "request_group",
@@ -587,7 +712,6 @@
       "name": "Companies",
       "description": "CRUD компаний (филиалов). Все запросы требуют X-Brand-Id и активной сессии."
     },
-
     {
       "_id": "req_companies_list",
       "_type": "request",
@@ -597,14 +721,24 @@
       "url": "{{ base_url }}/companies",
       "description": "Компании бренда с пагинацией. Возвращает { items, total, page, limit }.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [
-        { "name": "page", "value": "1" },
-        { "name": "limit", "value": "20" }
+        {
+          "name": "page",
+          "value": "1"
+        },
+        {
+          "name": "limit",
+          "value": "20"
+        }
       ],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_get",
       "_type": "request",
@@ -614,11 +748,15 @@
       "url": "{{ base_url }}/companies/{{ company_id }}",
       "description": "Полный профиль: базовые поля + card (templateId + fields) + platformsInfo.\n\nПоле без шаблона:      { default: ..., platforms: {} }\nПоле с шаблоном:       { isException: false, default: <из шаблона>, platforms: {} }\nПоле-исключение:       { isException: true,  default: <своё значение>, platforms: {} }",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_company_main_data_get",
       "_type": "request",
@@ -628,11 +766,15 @@
       "url": "{{ base_url }}/companies/{{ company_slug }}/main_data",
       "description": "Данные для формы редактирования.\nВозвращает: { id, name, groups, platformsInfo, templateId, fields: { status, ...card fields } }\n\nПоле без шаблона:      { default: ..., platforms: {} }\nПоле с шаблоном:       { isException: false, default: <из шаблона>, platforms: {} }\nПоле-исключение:       { isException: true,  default: <своё значение>, platforms: {} }",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_create_no_template",
       "_type": "request",
@@ -646,13 +788,18 @@
         "text": "{\n  \"status\": \"active\",\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Тестовая компания\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"test@example.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"city\": \"Москва\",\n      \"street\": \"Тверская\",\n      \"building\": \"1\"\n    }\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_create_with_template",
       "_type": "request",
@@ -666,13 +813,18 @@
         "text": "{\n  \"status\": \"active\",\n  \"templateId\": \"{{ template_id }}\",\n  \"groups\": [],\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"1\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"email\": {\n    \"default\": \"company@example.com\"\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_create_full",
       "_type": "request",
@@ -680,19 +832,24 @@
       "name": "Create Company (full, все поля)",
       "method": "POST",
       "url": "{{ base_url }}/companies",
-      "description": "Создаёт компанию со всеми данными карточки за один запрос.\n\nВсе поля карточки (names, phones, schedule, specialDays и т.д.) оборачиваются в { default: value }.\nИсключения без обёртки: status, templateId, groups.\n\nname деривируется из names.default[0].val — обязательное поле.\ngroups — массив { id } существующих или { name } новых групп.",
+      "description": "Создаёт компанию со всеми данными карточки за один запрос.\n\nВсе поля карточки (names, phones, schedule, specialDays и т.д.) оборачиваются в { default: value }.\nИсключения без обёртки: status, templateId, groups, addressDisplay, coordinates.\n\nname деривируется из names.default[0].val — обязательное поле.\ngroups — массив { id } существующих или { name } новых групп.\n\naddressDisplay/coordinates (NEW) — нужны для company-visibility (сопоставление с публичным поиском 2ГИС/Яндекс требует координат с точностью <150м).",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"status\": \"active\",\n  \"templateId\": null,\n  \"groups\": [\n    { \"id\": \"{{ group_id }}\" },\n    { \"name\": \"Новая группа\" }\n  ],\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" }\n    ]\n  },\n  \"shortNames\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Короткое наз. ру\" }\n    ]\n  },\n  \"altNames\": {\n    \"default\": [\n      { \"val\": \"Альт. название\" }\n    ]\n  },\n  \"descriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание ру\" }\n    ]\n  },\n  \"shortDescriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание короткое ру\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"company@example.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false },\n      { \"phone\": \"+70000000002\", \"ext\": \"101\", \"description\": \"Дополнительный\", \"hidden\": false },\n      { \"phone\": \"+70000000003\", \"ext\": \"\", \"description\": \"Скрытый\", \"hidden\": true }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"11111111\",\n      \"comment\": \"2 этаж, вход со двора\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"websites\": {\n    \"default\": [\n      { \"type\": \"main\", \"url\": \"https://aroma-coffee.ru\" },\n      { \"type\": \"additional\", \"url\": \"https://menu.aroma-coffee.ru\" }\n    ]\n  },\n  \"socials\": {\n    \"default\": [\n      { \"type\": \"instagram\", \"url\": \"https://instagram.com/aroma_coffee\" },\n      { \"type\": \"vk\", \"url\": \"https://vk.com/aroma_coffee\" }\n    ]\n  },\n  \"schedule\": {\n    \"default\": {\n      \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n      \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n    }\n  },\n  \"specialDays\": {\n    \"default\": [\n      { \"date\": \"01.01.2026\", \"closed\": true, \"from\": \"09:00\", \"to\": \"21:00\" },\n      { \"date\": \"02.01.2026\", \"closed\": false, \"from\": \"10:00\", \"to\": \"16:00\" }\n    ]\n  },\n  \"mainCategory\": {\n    \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n  },\n  \"additionalCategories\": {\n    \"default\": [\n      { \"id\": \"cafe\", \"name\": \"Кафе\" },\n      { \"id\": \"bakery\", \"name\": \"Пекарня\" }\n    ]\n  }\n}"
+        "text": "{\n  \"status\": \"active\",\n  \"templateId\": null,\n  \"groups\": [\n    { \"id\": \"{{ group_id }}\" },\n    { \"name\": \"Новая группа\" }\n  ],\n  \"addressDisplay\": \"г. Москва, ул. Тверская, 1\",\n  \"coordinates\": [37.6156, 55.7558],\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Кофейня Арома\" }\n    ]\n  },\n  \"shortNames\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Короткое наз. ру\" }\n    ]\n  },\n  \"altNames\": {\n    \"default\": [\n      { \"val\": \"Альт. название\" }\n    ]\n  },\n  \"descriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание ру\" }\n    ]\n  },\n  \"shortDescriptions\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Описание короткое ру\" }\n    ]\n  },\n  \"email\": {\n    \"default\": \"company@example.com\"\n  },\n  \"phones\": {\n    \"default\": [\n      { \"phone\": \"+70000000001\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false },\n      { \"phone\": \"+70000000002\", \"ext\": \"101\", \"description\": \"Дополнительный\", \"hidden\": false },\n      { \"phone\": \"+70000000003\", \"ext\": \"\", \"description\": \"Скрытый\", \"hidden\": true }\n    ]\n  },\n  \"address\": {\n    \"default\": {\n      \"country\": \"Россия\",\n      \"region\": \"Краснодарский край\",\n      \"city\": \"Краснодар\",\n      \"postalCode\": \"350901\",\n      \"street\": \"Восточно-кругликовская\",\n      \"building\": \"11111111\",\n      \"comment\": \"2 этаж, вход со двора\",\n      \"lat\": \"55.733974\",\n      \"lon\": \"37.587093\"\n    }\n  },\n  \"websites\": {\n    \"default\": [\n      { \"type\": \"main\", \"url\": \"https://aroma-coffee.ru\" },\n      { \"type\": \"additional\", \"url\": \"https://menu.aroma-coffee.ru\" }\n    ]\n  },\n  \"socials\": {\n    \"default\": [\n      { \"type\": \"instagram\", \"url\": \"https://instagram.com/aroma_coffee\" },\n      { \"type\": \"vk\", \"url\": \"https://vk.com/aroma_coffee\" }\n    ]\n  },\n  \"schedule\": {\n    \"default\": {\n      \"mon\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"tue\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"wed\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"thu\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"fri\": { \"closed\": false, \"from\": \"09:00\", \"to\": \"21:00\" },\n      \"sat\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" },\n      \"sun\": { \"closed\": true, \"from\": \"10:00\", \"to\": \"20:00\" }\n    }\n  },\n  \"specialDays\": {\n    \"default\": [\n      { \"date\": \"01.01.2026\", \"closed\": true, \"from\": \"09:00\", \"to\": \"21:00\" },\n      { \"date\": \"02.01.2026\", \"closed\": false, \"from\": \"10:00\", \"to\": \"16:00\" }\n    ]\n  },\n  \"mainCategory\": {\n    \"default\": { \"id\": \"coffee\", \"name\": \"Кофейня\" }\n  },\n  \"additionalCategories\": {\n    \"default\": [\n      { \"id\": \"cafe\", \"name\": \"Кафе\" },\n      { \"id\": \"bakery\", \"name\": \"Пекарня\" }\n    ]\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_create_minimal",
       "_type": "request",
@@ -706,13 +863,18 @@
         "text": "{\n  \"names\": {\n    \"default\": [\n      { \"lang\": \"ru\", \"val\": \"Тестовая компания\" }\n    ]\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_delete",
       "_type": "request",
@@ -722,11 +884,15 @@
       "url": "{{ base_url }}/companies/{{ company_id }}",
       "description": "Soft-delete: ставит status=deleted. Возвращает 204.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_update_default",
       "_type": "request",
@@ -740,13 +906,18 @@
         "text": "{\n  \"fields\": {\n    \"names\": {\n      \"value\": [\n        { \"lang\": \"ru\", \"val\": \"Обновлённое название\" }\n      ],\n      \"isException\": true,\n      \"platforms\": {\n        \"yandex\": [\n          { \"lang\": \"ru\", \"val\": \"Название для Яндекса\" }\n        ]\n      }\n    },\n    \"phones\": {\n      \"value\": [\n        { \"phone\": \"+79001234567\", \"ext\": \"\", \"description\": \"Основной\", \"hidden\": false }\n      ],\n      \"isException\": true\n    }\n  }\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_update_groups",
       "_type": "request",
@@ -760,13 +931,18 @@
         "text": "{\n  \"groupIds\": [\"{{ group_id }}\"]\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_get_platforms",
       "_type": "request",
@@ -776,11 +952,15 @@
       "url": "{{ base_url }}/companies/{{ company_id }}/platforms",
       "description": "Полные данные по подключениям платформ: orgId, orgName, status, isEnabled, connectedAt, lastSyncAt, syncError.",
       "body": {},
-      "headers": [{ "name": "X-Brand-Id", "value": "{{ brand_id }}" }],
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_companies_update_platform",
       "_type": "request",
@@ -794,13 +974,43 @@
         "text": "{\n  \"isEnabled\": true,\n  \"orgId\": \"123456789\",\n  \"orgName\": \"Кофейня Арома\"\n}"
       },
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "X-Brand-Id", "value": "{{ brand_id }}" }
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
       ],
       "parameters": [],
       "authentication": {}
     },
-
+    {
+      "_id": "req_companies_update_platform_twogis_reviews",
+      "_type": "request",
+      "parentId": "fld_companies",
+      "name": "Update Company Platform (2ГИС, для теста Reviews)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/companies/{{ company_id }}/platforms/twogis",
+      "description": "Привязывает РЕАЛЬНЫЙ 2ГИС-филиал к компании — нужно перед тестом папки Reviews. orgId = review_branch_id_with_answers (сеть «Шоколадница», 347 отзывов, есть настоящие ответы владельца) или review_branch_id_no_answers (маленький филиал без единого ответа — удобно сравнить оба случая).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"isEnabled\": true,\n  \"orgId\": \"{{ review_branch_id_with_answers }}\",\n  \"orgName\": \"Шоколадница, кофейня\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
     {
       "_id": "fld_upload",
       "_type": "request_group",
@@ -808,7 +1018,6 @@
       "name": "Upload",
       "description": "Загрузка файлов. Требует активной сессии."
     },
-
     {
       "_id": "req_upload_logo",
       "_type": "request",
@@ -816,16 +1025,20 @@
       "name": "Upload Logo",
       "method": "POST",
       "url": "{{ base_url }}/upload/logo",
-      "description": "Загружает логотип (jpeg/png/webp/svg, до 2MB). Возвращает { url }.",
+      "description": "Загружает логотип (jpeg/png/webp, до 2MB). Возвращает { url }.\n\nSVG убран из allowlist (SEC-010, closes stored XSS) — .svg вернёт 400 'Допустимые форматы: jpeg, png, webp'.",
       "body": {
         "mimeType": "multipart/form-data",
-        "params": [{ "name": "file", "type": "file" }]
+        "params": [
+          {
+            "name": "file",
+            "type": "file"
+          }
+        ]
       },
       "headers": [],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_import",
       "_type": "request_group",
@@ -833,7 +1046,6 @@
       "name": "Import / 2GIS",
       "description": "Импорт брендов и компаний из личного кабинета 2ГИС. Требует активной сессии."
     },
-
     {
       "_id": "req_import_single",
       "_type": "request",
@@ -846,11 +1058,15 @@
         "mimeType": "application/json",
         "text": "{\n  \"orgId\": \"{{ twogis_org_id }}\",\n  \"timezone\": \"Europe/Moscow\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_import_sync",
       "_type": "request",
@@ -863,19 +1079,22 @@
         "mimeType": "application/json",
         "text": "{\n  \"timezone\": \"Europe/Moscow\"\n}"
       },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "fld_parser",
       "_type": "request_group",
       "parentId": "wrk_geo",
       "name": "Map Parser (внутренний :3005)",
-      "description": "Прямые запросы к map-parser сервису. Авторизация не нужна."
+      "description": "Прямые запросы к map-parser сервису. С SEC-009 (2026-08-10) порт 3005 БОЛЬШЕ НЕ публикуется на хост в docker-compose — этот раздел работает только если map-parser запущен нативно (npx nest start map-parser) поверх docker-инфры, не через docker compose up. Каждый запрос требует заголовок X-Internal-Token (уже добавлен на все запросы папки, значение — parser_internal_token, дефолт для dev совпадает с .env.example)."
     },
-
     {
       "_id": "req_parser_orgs",
       "_type": "request",
@@ -885,11 +1104,15 @@
       "url": "{{ parser_url }}/2gis/account/orgs",
       "description": "Все организации из ЛК 2ГИС. Токен кэшируется 50 минут.",
       "body": {},
-      "headers": [],
+      "headers": [
+        {
+          "name": "X-Internal-Token",
+          "value": "{{ parser_internal_token }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     },
-
     {
       "_id": "req_parser_branches",
       "_type": "request",
@@ -899,14 +1122,24 @@
       "url": "{{ parser_url }}/2gis/account/branches",
       "description": "Филиалы организации из ЛК 2ГИС.",
       "body": {},
-      "headers": [],
+      "headers": [
+        {
+          "name": "X-Internal-Token",
+          "value": "{{ parser_internal_token }}"
+        }
+      ],
       "parameters": [
-        { "name": "orgId", "value": "{{ twogis_org_id }}" },
-        { "name": "per_page", "value": "200" }
+        {
+          "name": "orgId",
+          "value": "{{ twogis_org_id }}"
+        },
+        {
+          "name": "per_page",
+          "value": "200"
+        }
       ],
       "authentication": {}
     },
-
     {
       "_id": "req_parser_branch",
       "_type": "request",
@@ -916,7 +1149,438 @@
       "url": "{{ parser_url }}/2gis/account/branch/{{ twogis_branch_id }}",
       "description": "Полные данные филиала из Catalog API: рейтинг, отзывы, рубрики, расписание, контакты, координаты.",
       "body": {},
+      "headers": [
+        {
+          "name": "X-Internal-Token",
+          "value": "{{ parser_internal_token }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_parser_reviews_2gis",
+      "_type": "request",
+      "parentId": "fld_parser",
+      "name": "2GIS — Parse Reviews (city-agnostic URL)",
+      "method": "POST",
+      "url": "{{ parser_url }}/parser/2gis/reviews",
+      "description": "Прямой вызов скрапера отзывов 2ГИС в обход review-service/api-gateway — полезно для быстрой диагностики. twoGisUrl строится по city-agnostic паттерну 2gis.ru/geo/{branchId} (живой спайк 2026-08-11 — работает для ЛЮБОГО branchId, без city-slug). saveToDb:true реально пишет в таблицу reviews (companyId — произвольная строка-метка, не обязан быть настоящим uuid компании при прямом вызове).",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"companyId\": \"manual-test\",\n  \"twoGisUrl\": \"https://2gis.ru/geo/{{ review_branch_id_with_answers }}\",\n  \"branchId\": \"{{ review_branch_id_with_answers }}\",\n  \"limit\": 20,\n  \"saveToDb\": false\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Internal-Token",
+          "value": "{{ parser_internal_token }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_parser_reviews_get",
+      "_type": "request",
+      "parentId": "fld_parser",
+      "name": "Get Stored Reviews (сырое, из БД)",
+      "method": "GET",
+      "url": "{{ parser_url }}/parser/reviews/{{ company_id }}",
+      "description": "Читает то, что реально сохранено в таблице reviews по companyId — то же самое, что видит review-service изнутри, без агрегатов.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Internal-Token",
+          "value": "{{ parser_internal_token }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "fld_team",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Team",
+      "description": "Приглашение сотрудников, роли Manager/Viewer. Приглашать можно только на email, у которого ещё нет аккаунта — становится регистрацией по ссылке. В dev письма не отправляются, токен приглашения печатается в консоль api-gateway."
+    },
+    {
+      "_id": "req_team_list",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "List Team Members",
+      "method": "GET",
+      "url": "{{ base_url }}/team",
+      "description": "Участники бренда. Доступно всем ролям (Owner/Manager/Viewer).",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_invite",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "Invite Member",
+      "method": "POST",
+      "url": "{{ base_url }}/team/invite",
+      "description": "Только Owner. role — manager или viewer (owner намеренно нельзя приглашать). После вызова смотри лог api-gateway на 'токен приглашения' — письма в dev не шлются.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ invite_email }}\",\n  \"role\": \"manager\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_invitations_list",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "List Pending Invitations",
+      "method": "GET",
+      "url": "{{ base_url }}/team/invitations",
+      "description": "Только Owner.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_invitation_revoke",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "Revoke Invitation",
+      "method": "DELETE",
+      "url": "{{ base_url }}/team/invitations/REPLACE_INVITATION_ID",
+      "description": "Только Owner. 204. Подставь id из List Pending Invitations.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_accept_invitation",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "Accept Invitation (публичный, без сессии)",
+      "method": "POST",
+      "url": "{{ base_url }}/team/invitations/accept",
+      "description": "Без SessionGuard/x-brand-id — сама создаёт аккаунт+сессию, аналог /auth/register. token — из лога api-gateway после Invite Member (или переменная invitation_token, если сохранишь вручную). Открывать в ДРУГОЙ вкладке/другом Insomnia cookie jar, если хочешь проверить именно приглашённого — иначе перезатрёт текущую сессию owner'а.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"{{ invitation_token }}\",\n  \"name\": \"Приглашённый Сотрудник\",\n  \"password\": \"password123\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_update_role",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "Update Member Role",
+      "method": "PATCH",
+      "url": "{{ base_url }}/team/members/REPLACE_USER_ID",
+      "description": "Только Owner. role — manager или viewer.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"role\": \"viewer\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_team_remove_member",
+      "_type": "request",
+      "parentId": "fld_team",
+      "name": "Remove Member",
+      "method": "DELETE",
+      "url": "{{ base_url }}/team/members/REPLACE_USER_ID",
+      "description": "Только Owner. 204.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "fld_places_search",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Places Search (карты)",
+      "description": "Поиск организаций на публичных картах 2ГИС/Яндекс — только чтение, ничего не создаёт. Не путать с Import/2GIS (тот работает с ЛК 2ГИС, требует владения аккаунтом)."
+    },
+    {
+      "_id": "req_places_combined",
+      "_type": "request",
+      "parentId": "fld_places_search",
+      "name": "Combined Search (2ГИС+Яндекс, дедуп)",
+      "method": "GET",
+      "url": "{{ base_url }}/integrations/places/search",
+      "description": "Объединённый поиск с дедупликацией между провайдерами (не внутри одного — два филиала одной сети рядом не мержатся). Партиальный успех — упавший провайдер попадает в failedSources, второй всё равно отдаётся.",
+      "body": {},
       "headers": [],
+      "parameters": [
+        {
+          "name": "q",
+          "value": "кофейня"
+        },
+        {
+          "name": "location",
+          "value": "37.6156,55.7558"
+        }
+      ],
+      "authentication": {}
+    },
+    {
+      "_id": "req_places_2gis",
+      "_type": "request",
+      "parentId": "fld_places_search",
+      "name": "2ГИС Places (официальный публичный API)",
+      "method": "GET",
+      "url": "{{ base_url }}/integrations/2gis/places",
+      "description": "pageSize реально ограничен 1-10 (проверено живым запросом — 2ГИС отдаёт ошибку на большее).",
+      "body": {},
+      "headers": [],
+      "parameters": [
+        {
+          "name": "q",
+          "value": "кофейня"
+        },
+        {
+          "name": "location",
+          "value": "37.6156,55.7558"
+        },
+        {
+          "name": "pageSize",
+          "value": "10"
+        },
+        {
+          "name": "fields",
+          "value": "point,reviews,rubrics",
+          "disabled": true
+        }
+      ],
+      "authentication": {}
+    },
+    {
+      "_id": "req_places_yandex",
+      "_type": "request",
+      "parentId": "fld_places_search",
+      "name": "Яндекс Places (Geosearch API)",
+      "method": "GET",
+      "url": "{{ base_url }}/integrations/yandex/places",
+      "description": "Read-only — писать карточку в Яндекс через этот API нельзя (только партнёрский XML-фид, отдельная история).",
+      "body": {},
+      "headers": [],
+      "parameters": [
+        {
+          "name": "q",
+          "value": "кофейня"
+        },
+        {
+          "name": "ll",
+          "value": "37.6156,55.7558"
+        },
+        {
+          "name": "results",
+          "value": "10"
+        }
+      ],
+      "authentication": {}
+    },
+    {
+      "_id": "fld_visibility",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Company Visibility",
+      "description": "Presence-дашборд: видна ли каждая компания бренда в публичном поиске 2ГИС/Яндекс. Read-only аудит, ничего не создаёт/не меняет."
+    },
+    {
+      "_id": "req_visibility_check",
+      "_type": "request",
+      "parentId": "fld_visibility",
+      "name": "Check Brand Visibility",
+      "method": "GET",
+      "url": "{{ base_url }}/company-visibility/check",
+      "description": "Для сети в 50 точек может занять десятки секунд (внешние запросы батчами по 5 на провайдера). Точность сопоставления требует у компании coordinates с погрешностью <150м от реальной точки (см. addressDisplay/coordinates в Create Company).",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "fld_competitor_analysis",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Competitor Analysis",
+      "description": "AI-анализ конкурентов по геолокации. textAnalysis ВСЕГДА null — реальный вызов Claude API сознательно не подключён (пользователь не готов тратить деньги на этапе разработки). Сравнение карточки/рейтинга — детерминированное, без AI, работает полностью."
+    },
+    {
+      "_id": "req_competitor_generate_one",
+      "_type": "request",
+      "parentId": "fld_competitor_analysis",
+      "name": "Generate Report (одна компания)",
+      "method": "POST",
+      "url": "{{ base_url }}/competitor-analysis/{{ company_id }}/generate",
+      "description": "До 5 ближайших конкурентов (радиус 1000м, та же категория) на 2ГИС/Яндексе. Сохраняет новую версию отчёта, история не перезаписывается. Скрапинг отзывов конкурентов — только Яндекс (2ГИС был отложен из-за city-slug — теперь есть обходной путь 2gis.ru/geo/{branchId}, но в competitor-analysis ещё не подключён).",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_competitor_get_latest",
+      "_type": "request",
+      "parentId": "fld_competitor_analysis",
+      "name": "Get Latest Report",
+      "method": "GET",
+      "url": "{{ base_url }}/competitor-analysis/{{ company_id }}/latest",
+      "description": "Читает последний уже сохранённый отчёт (competitors/cardComparison/ratingComparison/textAnalysis) без повторной генерации. null, если отчётов для компании ещё нет.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_competitor_generate_brand",
+      "_type": "request",
+      "parentId": "fld_competitor_analysis",
+      "name": "Generate Reports (весь бренд, батчами)",
+      "method": "POST",
+      "url": "{{ base_url }}/competitor-analysis/brand",
+      "description": "Батчами по 5 компаний. Партиальный успех — падение одной компании не прерывает батч, для неё { success: false, error }. Может занять минуты для крупной сети.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "fld_reviews",
+      "_type": "request_group",
+      "parentId": "wrk_geo",
+      "name": "Reviews (NEW 2026-08-11)",
+      "description": "Агрегация СВОИХ отзывов компании с 2ГИС+Яндекс. Перед тестом обязательно сначала выполни 'Update Company Platform (2ГИС, для теста Reviews)' в папке Companies — иначе refresh вернёт { yandex: null, twogis: null } (нет подключённых платформ). Отвечено/не отвечено определяется по наличию answer у отзыва НА САМОЙ ПЛАТФОРМЕ (никакого отдельного статуса в нашей системе нет)."
+    },
+    {
+      "_id": "req_reviews_refresh",
+      "_type": "request",
+      "parentId": "fld_reviews",
+      "name": "Refresh Company Reviews (скрапинг + сохранение)",
+      "method": "POST",
+      "url": "{{ base_url }}/reviews/companies/{{ company_id }}/refresh",
+      "description": "Скрапит подключённые платформы (isEnabled+orgId у company-platform) и сохраняет ВСЕ отзывы (без лимита числа — для агрегации 'неотвечено' нужна полная выборка). На review_branch_id_with_answers (347 отзывов) может занять ~30-60 секунд. Партиальный успех по платформе.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_reviews_list",
+      "_type": "request",
+      "parentId": "fld_reviews",
+      "name": "List Company Reviews + Aggregates",
+      "method": "GET",
+      "url": "{{ base_url }}/reviews/companies/{{ company_id }}",
+      "description": "Read-only, не триггерит скрапинг — читает уже сохранённое. Возвращает { reviews: [...], aggregates: { combined, yandex, twogis } }, у каждого — { total, unanswered, averageRating }.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {}
+    },
+    {
+      "_id": "req_reviews_brand_dashboard",
+      "_type": "request",
+      "parentId": "fld_reviews",
+      "name": "Brand Dashboard (сумма неотвеченных по сети)",
+      "method": "GET",
+      "url": "{{ base_url }}/reviews/brand",
+      "description": "Read-only, батч по 5 компаний. Возвращает { companies: [{companyId, companyName, aggregates, error?}], totalUnanswered }. Партиальный успех — падение чтения для одной компании не прерывает остальные.",
+      "body": {},
+      "headers": [
+        {
+          "name": "X-Brand-Id",
+          "value": "{{ brand_id }}"
+        }
+      ],
       "parameters": [],
       "authentication": {}
     }
