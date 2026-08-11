@@ -98,6 +98,11 @@ export const Patterns = {
   // ratingComparison — детерминированные, textAnalysis — заглушка (null),
   // реальный вызов Claude API не подключён (см. Out of Scope плана).
   AI_COMPETITOR_ANALYSIS_GENERATE: 'ai.competitorAnalysis.generate',
+
+  // review-service — см. docs/refactor-plans/review-service-own-reviews.md.
+  // Коммит 4: скрапинг+сохранение отзывов одной компании на подключённых
+  // платформах (2ГИС/Яндекс), партиальный успех на уровне платформы.
+  REVIEW_REFRESH_COMPANY: 'review.refreshCompany',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
