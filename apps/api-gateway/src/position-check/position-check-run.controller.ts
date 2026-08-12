@@ -81,4 +81,29 @@ export class PositionCheckRunController {
       keyword,
     });
   }
+
+  @ApiOperation({
+    summary: 'Архив истории проверок позиции компании (см. retention)',
+    description:
+      'Записи старше POSITION_CHECK_RETENTION_DAYS архивируются в MinIO и ' +
+      'удаляются из горячей таблицы (см. ' +
+      'docs/refactor-plans/position-checker-retention.md) — этот эндпоинт ' +
+      'читает архив, не горячую историю. Без keyword — весь архив компании.',
+  })
+  @ApiParam({ name: 'companyId', format: 'uuid' })
+  @ApiQuery({ name: 'keyword', required: false })
+  @Get('archive')
+  archive(
+    @Param('companyId') companyId: string,
+    @Headers('x-brand-id') brandId: string,
+    @CurrentUser() user: { userId: string },
+    @Query('keyword') keyword?: string,
+  ) {
+    return sendRpc(this.coreClient, Patterns.POSITION_CHECK_ARCHIVE_LIST, {
+      companyId,
+      brandId,
+      userId: user.userId,
+      keyword,
+    });
+  }
 }
