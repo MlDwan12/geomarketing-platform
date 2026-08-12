@@ -129,6 +129,15 @@ export const Patterns = {
   // → PositionCheckEntry[] (партиальный успех — упавшие провайдер/слово
   // просто отсутствуют в ответе, не входят как null).
   POSITION_CHECK_FIND: 'positionCheck.find',
+
+  // Retention — см. docs/refactor-plans/position-checker-retention.md.
+  // Записи старше POSITION_CHECK_RETENTION_DAYS архивируются в MinIO (NDJSON+
+  // gzip, группировка по companyId) и удаляются из Postgres. Глобальная
+  // операция над всеми брендами — без companyId/brandId/userId в payload.
+  POSITION_CHECK_CLEANUP_RUN: 'positionCheck.cleanup.run',
+  // Чтение архива для одной компании (опционально фильтр по keyword) — те же
+  // проверки доступа, что у POSITION_CHECK_HISTORY.
+  POSITION_CHECK_ARCHIVE_LIST: 'positionCheck.archive.list',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

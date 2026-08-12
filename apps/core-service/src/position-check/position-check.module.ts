@@ -5,6 +5,10 @@ import { PositionCheckResult } from './entities/position-check-result.entity';
 import { PositionCheckController } from './position-check.controller';
 import { TrackedKeywordService } from './services/tracked-keyword.service';
 import { PositionCheckResultService } from './services/position-check-result.service';
+import { PositionCheckArchiveStoreService } from './archive/position-check-archive-store.service';
+import { s3ClientProvider } from './archive/s3-client.provider';
+import { PositionCheckCleanupService } from './services/position-check-cleanup.service';
+import { PositionCheckCleanupScheduler } from './services/position-check-cleanup.scheduler';
 import { CompanyModule } from '../company/company.module';
 
 @Module({
@@ -13,6 +17,13 @@ import { CompanyModule } from '../company/company.module';
     CompanyModule,
   ],
   controllers: [PositionCheckController],
-  providers: [TrackedKeywordService, PositionCheckResultService],
+  providers: [
+    TrackedKeywordService,
+    PositionCheckResultService,
+    s3ClientProvider,
+    PositionCheckArchiveStoreService,
+    PositionCheckCleanupService,
+    PositionCheckCleanupScheduler,
+  ],
 })
 export class PositionCheckModule {}
