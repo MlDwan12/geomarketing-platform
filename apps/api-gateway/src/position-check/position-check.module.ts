@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { Queues } from '@geo/contracts';
 import { PositionCheckController } from './position-check.controller';
+import { PositionCheckRunController } from './position-check-run.controller';
+import { PositionCheckOrchestratorService } from './position-check-orchestrator.service';
 
 @Module({
   imports: [
@@ -20,8 +22,22 @@ import { PositionCheckController } from './position-check.controller';
           },
         }),
       },
+      {
+        name: 'INTEGRATION_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL')!],
+            queue: Queues.INTEGRATION,
+            queueOptions: { durable: true },
+          },
+        }),
+      },
     ]),
   ],
-  controllers: [PositionCheckController],
+  controllers: [PositionCheckController, PositionCheckRunController],
+  providers: [PositionCheckOrchestratorService],
 })
 export class PositionCheckModule {}
