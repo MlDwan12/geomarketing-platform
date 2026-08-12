@@ -5,6 +5,7 @@ import { Queues } from '@geo/contracts';
 import { PositionCheckController } from './position-check.controller';
 import { PositionCheckRunController } from './position-check-run.controller';
 import { PositionCheckBrandController } from './position-check-brand.controller';
+import { PositionCheckCleanupController } from './position-check-cleanup.controller';
 import { PositionCheckOrchestratorService } from './position-check-orchestrator.service';
 
 @Module({
@@ -42,6 +43,7 @@ import { PositionCheckOrchestratorService } from './position-check-orchestrator.
     PositionCheckController,
     PositionCheckRunController,
     PositionCheckBrandController,
+    PositionCheckCleanupController,
   ],
   providers: [PositionCheckOrchestratorService],
 })
