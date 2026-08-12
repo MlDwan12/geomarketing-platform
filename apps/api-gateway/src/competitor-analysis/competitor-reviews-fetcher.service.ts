@@ -19,11 +19,10 @@ const REVIEWS_PER_SOURCE = 50;
 // map-parser, не должен быть реальной записью в БД (map-parser сейчас вообще
 // не пишет отзывы в БД из parseReviews — upsertReviews нигде не вызывается).
 //
-// Реализован только Яндекс: YandexParserService сам строит URL из orgId.
-// 2ГИС не реализован — TwoGisParserService.parseReviews требует полный
-// навигируемый twoGisUrl (page.goto), а у CompetitorListing с 2ГИС есть
-// только id/branchId без city-slug, из которого собрать корректный URL.
-// Не гадаем на URL без живой проверки — открытый вопрос на будущее.
+// 2ГИС (см. docs/refactor-plans/competitor-2gis-reviews.md): URL вида
+// https://2gis.ru/geo/{id} — тот же id, что уже приходит в
+// CompetitorListing.sources[] для provider '2gis' (публичный каталог-поиск).
+// Подтверждено живым спайком — city-agnostic, не нужен отдельный city-slug.
 @Injectable()
 export class CompetitorReviewsFetcherService {
   private readonly mapParserUrl: string;
@@ -67,6 +66,42 @@ export class CompetitorReviewsFetcherService {
       // Скрапинг для одного источника упал — не валит весь отчёт, конкурент
       // просто останется без AI-анализа отзывов (partial success, тот же
       // принцип, что в PlacesSearchService/MapVisibilityService).
+      return [];
+    }
+  }
+
+  async fetchTwoGisReviews(
+    companyIdLabel: string,
+    branchId: string,
+  ): Promise<FetchedReview[]> {
+    try {
+      const res = await fetch(`${this.mapParserUrl}/parser/2gis/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token':
+            this.config.get<string>('MAP_PARSER_INTERNAL_TOKEN') ?? '',
+        },
+        body: JSON.stringify({
+          companyId: companyIdLabel,
+          twoGisUrl: `https://2gis.ru/geo/${branchId}`,
+          branchId,
+          limit: REVIEWS_PER_SOURCE,
+          saveToDb: false,
+        }),
+      });
+
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as {
+        reviews?: { text: string | null; stars: number | null }[];
+      };
+
+      return (data.reviews ?? []).map((r) => ({
+        text: r.text,
+        stars: r.stars,
+      }));
+    } catch {
       return [];
     }
   }

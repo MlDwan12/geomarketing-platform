@@ -74,3 +74,68 @@ describe('CompetitorReviewsFetcherService.fetchYandexReviews', () => {
     );
   });
 });
+
+describe('CompetitorReviewsFetcherService.fetchTwoGisReviews', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('вызывает POST /parser/2gis/reviews с twoGisUrl из branchId, лимитом и saveToDb: false', async () => {
+    const fetchMock = mockFetchOnce(true, {
+      reviews: [{ text: 'Хорошо', stars: 4 }],
+    });
+    const service = new CompetitorReviewsFetcherService(
+      fakeConfig('http://map-parser-test:3005'),
+    );
+
+    const result = await service.fetchTwoGisReviews(
+      'label-1',
+      '4504127909048380',
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://map-parser-test:3005/parser/2gis/reviews',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          companyId: 'label-1',
+          twoGisUrl: 'https://2gis.ru/geo/4504127909048380',
+          branchId: '4504127909048380',
+          limit: 50,
+          saveToDb: false,
+        }),
+      }),
+    );
+    expect(result).toEqual([{ text: 'Хорошо', stars: 4 }]);
+  });
+
+  it('map-parser вернул не ok — пустой массив, не бросает исключение', async () => {
+    mockFetchOnce(false, {});
+    const service = new CompetitorReviewsFetcherService(fakeConfig());
+
+    const result = await service.fetchTwoGisReviews('label-1', 'branch-1');
+
+    expect(result).toEqual([]);
+  });
+
+  it('сетевая ошибка — пустой массив (partial success), не роняет вызывающий код', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('network boom'));
+    const service = new CompetitorReviewsFetcherService(fakeConfig());
+
+    await expect(
+      service.fetchTwoGisReviews('label-1', 'branch-1'),
+    ).resolves.toEqual([]);
+  });
+
+  it('без MAP_PARSER_URL в конфиге — использует дефолт для docker-сети', async () => {
+    const fetchMock = mockFetchOnce(true, { reviews: [] });
+    const service = new CompetitorReviewsFetcherService(fakeConfig(undefined));
+
+    await service.fetchTwoGisReviews('label-1', 'branch-1');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://geo-map-parser:3005/parser/2gis/reviews',
+      expect.anything(),
+    );
+  });
+});
