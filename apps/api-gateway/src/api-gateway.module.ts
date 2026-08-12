@@ -20,6 +20,7 @@ import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analy
 import { UploadModule } from './upload/upload.module';
 import { TeamModule } from './team/team.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { PositionCheckModule } from './position-check/position-check.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     UploadModule,
     TeamModule,
     ReviewsModule,
+    PositionCheckModule,
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService, HealthService],
