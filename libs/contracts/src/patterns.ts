@@ -123,6 +123,12 @@ export const Patterns = {
   // новые строки, не перезапись (см. Decision Document плана).
   POSITION_CHECK_SAVE: 'positionCheck.save',
   POSITION_CHECK_HISTORY: 'positionCheck.history',
+
+  // Integrations — коммит 3: сам расчёт позиции (поиск + индекс совпадения в
+  // топ-10 выдачи), без хранения. { company: CompanyRef, keywords: string[] }
+  // → PositionCheckEntry[] (партиальный успех — упавшие провайдер/слово
+  // просто отсутствуют в ответе, не входят как null).
+  POSITION_CHECK_FIND: 'positionCheck.find',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

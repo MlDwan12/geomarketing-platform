@@ -7,6 +7,7 @@ import { YandexModule } from './yandex/yandex.module';
 import { PlacesSearchModule } from './places-search/places-search.module';
 import { MapVisibilityModule } from './map-visibility/map-visibility.module';
 import { CompetitorListingsModule } from './competitor-listings/competitor-listings.module';
+import { PositionCheckModule } from './position-check/position-check.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CompetitorListingsModule } from './competitor-listings/competitor-listi
     PlacesSearchModule,
     MapVisibilityModule,
     CompetitorListingsModule,
+    PositionCheckModule,
   ],
   controllers: [IntegrationServiceController],
   providers: [IntegrationServiceService],
