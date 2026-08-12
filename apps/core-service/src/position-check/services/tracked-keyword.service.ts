@@ -41,12 +41,15 @@ export class TrackedKeywordService {
     );
   }
 
+  // Promise<null> с явным return, не Promise<void> — @MessagePattern-хендлер,
+  // вернувший undefined, не долетает до api-gateway через RMQ (firstValueFrom
+  // падает на пустом ответе). Тот же паттерн, что TeamService.removeMember.
   async remove(
     companyId: string,
     brandId: string,
     userId: string,
     keyword: string,
-  ): Promise<void> {
+  ): Promise<null> {
     await this.checkCompanyAccess(
       companyId,
       brandId,
@@ -55,6 +58,7 @@ export class TrackedKeywordService {
     );
 
     await this.keywordRepo.delete({ companyId, keyword });
+    return null;
   }
 
   async listForCompany(

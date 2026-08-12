@@ -104,17 +104,23 @@ describe('TrackedKeywordService', () => {
     expect(repo.save).not.toHaveBeenCalled();
   });
 
-  it('remove() удаляет слово по companyId+keyword', async () => {
+  it('remove() удаляет слово по companyId+keyword и возвращает null', async () => {
     const access = fakeAccess({ id: 'company-1', brandId: 'brand-1' });
     const repo = fakeRepo();
     const service = new TrackedKeywordService(repo.repo, access.service);
 
-    await service.remove('company-1', 'brand-1', 'user-1', 'кофейня');
+    const result = await service.remove(
+      'company-1',
+      'brand-1',
+      'user-1',
+      'кофейня',
+    );
 
     expect(repo.delete).toHaveBeenCalledWith({
       companyId: 'company-1',
       keyword: 'кофейня',
     });
+    expect(result).toBeNull();
   });
 
   it('listForCompany() возвращает список слов компании, отсортированный по createdAt ASC', async () => {
