@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { Queues } from '@geo/contracts';
 import { PositionCheckController } from './position-check.controller';
 import { PositionCheckRunController } from './position-check-run.controller';
+import { PositionCheckBrandController } from './position-check-brand.controller';
 import { PositionCheckOrchestratorService } from './position-check-orchestrator.service';
 
 @Module({
@@ -37,7 +38,11 @@ import { PositionCheckOrchestratorService } from './position-check-orchestrator.
       },
     ]),
   ],
-  controllers: [PositionCheckController, PositionCheckRunController],
+  controllers: [
+    PositionCheckController,
+    PositionCheckRunController,
+    PositionCheckBrandController,
+  ],
   providers: [PositionCheckOrchestratorService],
 })
 export class PositionCheckModule {}
