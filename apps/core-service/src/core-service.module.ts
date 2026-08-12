@@ -27,6 +27,7 @@ import { NarrowUserBrandsRole1750000009000 } from './migrations/1750000009000-Na
 import { DropUserRole1750000010000 } from './migrations/1750000010000-DropUserRole';
 import { AddTeamInvitations1750000011000 } from './migrations/1750000011000-AddTeamInvitations';
 import { AddTrackedKeywords1750000012000 } from './migrations/1750000012000-AddTrackedKeywords';
+import { AddPositionCheckResults1750000013000 } from './migrations/1750000013000-AddPositionCheckResults';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AddTrackedKeywords1750000012000 } from './migrations/1750000012000-AddT
           DropUserRole1750000010000,
           AddTeamInvitations1750000011000,
           AddTrackedKeywords1750000012000,
+          AddPositionCheckResults1750000013000,
         ],
         logging: config.get('NODE_ENV') === 'development',
       }),

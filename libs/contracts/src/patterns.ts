@@ -118,6 +118,11 @@ export const Patterns = {
   POSITION_KEYWORDS_ADD: 'positionCheck.keywords.add',
   POSITION_KEYWORDS_REMOVE: 'positionCheck.keywords.remove',
   POSITION_KEYWORDS_LIST: 'positionCheck.keywords.list',
+  // Коммит 2: сохранение результата проверки (батч на все ключевые слова×
+  // провайдеры одной компании за раз) + чтение истории. Каждая проверка —
+  // новые строки, не перезапись (см. Decision Document плана).
+  POSITION_CHECK_SAVE: 'positionCheck.save',
+  POSITION_CHECK_HISTORY: 'positionCheck.history',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];
