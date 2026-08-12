@@ -110,6 +110,14 @@ export const Patterns = {
   // + сумма неотвеченных по всей сети. Не триггерит скрапинг (см. коммит 4
   // для обновления одной компании).
   REVIEW_BRAND_DASHBOARD: 'review.brandDashboard',
+
+  // Чекер позиций — см. docs/refactor-plans/position-checker.md.
+  // Коммит 1: CRUD ручных ключевых слов на компанию (постоянный список,
+  // переиспользуется при каждой проверке). Авто-ключевое слово из категории
+  // карточки сюда не пишется — читается заново при каждой проверке.
+  POSITION_KEYWORDS_ADD: 'positionCheck.keywords.add',
+  POSITION_KEYWORDS_REMOVE: 'positionCheck.keywords.remove',
+  POSITION_KEYWORDS_LIST: 'positionCheck.keywords.list',
 } as const;
 
 export type Pattern = (typeof Patterns)[keyof typeof Patterns];

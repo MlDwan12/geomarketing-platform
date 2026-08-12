@@ -11,6 +11,7 @@ import { BrandModule } from './brand/brand.module';
 import { CompanyModule } from './company/company.module';
 import { CompetitorAnalysisModule } from './competitor-analysis/competitor-analysis.module';
 import { TeamModule } from './team/team.module';
+import { PositionCheckModule } from './position-check/position-check.module';
 import { RpcExceptionFilter } from './rpc-exception.filter';
 import { CorrelationIdInterceptor } from './correlation-id.interceptor';
 import { Init1750000000000 } from './migrations/1750000000000-Init';
@@ -25,6 +26,7 @@ import { AddCompetitorAnalysisReports1750000008000 } from './migrations/17500000
 import { NarrowUserBrandsRole1750000009000 } from './migrations/1750000009000-NarrowUserBrandsRole';
 import { DropUserRole1750000010000 } from './migrations/1750000010000-DropUserRole';
 import { AddTeamInvitations1750000011000 } from './migrations/1750000011000-AddTeamInvitations';
+import { AddTrackedKeywords1750000012000 } from './migrations/1750000012000-AddTrackedKeywords';
 
 @Module({
   imports: [
@@ -52,6 +54,7 @@ import { AddTeamInvitations1750000011000 } from './migrations/1750000011000-AddT
           NarrowUserBrandsRole1750000009000,
           DropUserRole1750000010000,
           AddTeamInvitations1750000011000,
+          AddTrackedKeywords1750000012000,
         ],
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -62,6 +65,7 @@ import { AddTeamInvitations1750000011000 } from './migrations/1750000011000-AddT
     CompanyModule,
     CompetitorAnalysisModule,
     TeamModule,
+    PositionCheckModule,
   ],
   controllers: [CoreServiceController],
   providers: [
