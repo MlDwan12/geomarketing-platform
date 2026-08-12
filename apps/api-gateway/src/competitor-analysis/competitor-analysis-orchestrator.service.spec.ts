@@ -14,17 +14,28 @@ function fakeClient(responses: Record<string, unknown>) {
 
 function fakeReviewsFetcher(
   byOrgId: Record<string, { text: string | null; stars: number | null }[]>,
+  byBranchId: Record<
+    string,
+    { text: string | null; stars: number | null }[]
+  > = {},
 ) {
   const fetchYandexReviews = jest
     .fn()
     .mockImplementation((_label: string, orgId: string) =>
       Promise.resolve(byOrgId[orgId] ?? []),
     );
+  const fetchTwoGisReviews = jest
+    .fn()
+    .mockImplementation((_label: string, branchId: string) =>
+      Promise.resolve(byBranchId[branchId] ?? []),
+    );
   return {
     service: {
       fetchYandexReviews,
+      fetchTwoGisReviews,
     } as unknown as CompetitorReviewsFetcherService,
     fetchYandexReviews,
+    fetchTwoGisReviews,
   };
 }
 
@@ -227,6 +238,134 @@ describe('CompetitorAnalysisOrchestratorService.generateForCompany', () => {
 
     expect(fetchYandexReviews).toHaveBeenCalledTimes(5);
     expect(maxConcurrent).toBeLessThanOrEqual(2);
+  });
+
+  it('конкурент только с 2ГИС-источником — отзывы скрапятся через fetchTwoGisReviews', async () => {
+    const twoGisOnlyCompetitor = {
+      name: 'Кафе на 2ГИС',
+      phone: undefined,
+      categories: ['Кафе'],
+      rating: 4.2,
+      reviewCount: 15,
+      sources: [{ provider: '2gis' as const, id: 'branch-2gis-1', raw: {} }],
+    };
+    const core = fakeClient({
+      [Patterns.COMPANY_GET]: { ...companyGetResult, card: { fields: {} } },
+      [Patterns.COMPETITOR_ANALYSIS_SAVE]: { id: 'report-2gis' },
+    });
+    const integration = fakeClient({
+      [Patterns.MAP_VISIBILITY_CHECK]: [
+        {
+          companyId: 'company-1',
+          byProvider: { yandex: { matchedItem: undefined } },
+        },
+      ],
+      [Patterns.COMPETITOR_LISTINGS_FIND]: [twoGisOnlyCompetitor],
+    });
+    const ai = fakeClient({
+      [Patterns.AI_COMPETITOR_ANALYSIS_GENERATE]: {
+        cardComparison: {},
+        ratingComparison: {},
+        textAnalysis: null,
+      },
+    });
+    const reviews = fakeReviewsFetcher(
+      {},
+      { 'branch-2gis-1': [{ text: 'Отлично на 2ГИС', stars: 5 }] },
+    );
+
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      integration.client,
+      ai.client,
+      reviews.service,
+    );
+
+    await orchestrator.generateForCompany('company-1', 'brand-1', 'user-1');
+
+    expect(reviews.fetchYandexReviews).not.toHaveBeenCalled();
+    expect(reviews.fetchTwoGisReviews).toHaveBeenCalledWith(
+      'competitor:branch-2gis-1',
+      'branch-2gis-1',
+    );
+    const aiCall = ai.send.mock.calls[0][1] as {
+      competitors: { reviews: string[] }[];
+    };
+    expect(aiCall.competitors[0].reviews).toEqual(['Отлично на 2ГИС']);
+  });
+
+  it('конкурент с обоими источниками — скрапится последовательно (Яндекс, потом 2ГИС), тексты объединяются', async () => {
+    const bothSourcesCompetitor = {
+      name: 'Кафе на обеих платформах',
+      phone: undefined,
+      categories: ['Кафе'],
+      rating: 4.5,
+      reviewCount: 20,
+      sources: [
+        { provider: 'yandex' as const, id: 'yandex-both', raw: {} },
+        { provider: '2gis' as const, id: 'branch-both', raw: {} },
+      ],
+    };
+    const core = fakeClient({
+      [Patterns.COMPANY_GET]: { ...companyGetResult, card: { fields: {} } },
+      [Patterns.COMPETITOR_ANALYSIS_SAVE]: { id: 'report-both' },
+    });
+    const integration = fakeClient({
+      [Patterns.MAP_VISIBILITY_CHECK]: [
+        {
+          companyId: 'company-1',
+          byProvider: { yandex: { matchedItem: undefined } },
+        },
+      ],
+      [Patterns.COMPETITOR_LISTINGS_FIND]: [bothSourcesCompetitor],
+    });
+    const ai = fakeClient({
+      [Patterns.AI_COMPETITOR_ANALYSIS_GENERATE]: {
+        cardComparison: {},
+        ratingComparison: {},
+        textAnalysis: null,
+      },
+    });
+
+    const callOrder: string[] = [];
+    let yandexInFlight = false;
+    const fetchYandexReviews = jest.fn().mockImplementation(async () => {
+      yandexInFlight = true;
+      callOrder.push('yandex-start');
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      yandexInFlight = false;
+      callOrder.push('yandex-end');
+      return [{ text: 'Яндекс-отзыв', stars: 5 }];
+    });
+    const fetchTwoGisReviews = jest.fn().mockImplementation(() => {
+      // Если 2ГИС стартовал, пока Яндекс ещё не закончил — провайдеры
+      // скрапились параллельно, а не последовательно.
+      expect(yandexInFlight).toBe(false);
+      callOrder.push('2gis-start');
+      return Promise.resolve([{ text: '2ГИС-отзыв', stars: 4 }]);
+    });
+    const reviewsFetcher = {
+      fetchYandexReviews,
+      fetchTwoGisReviews,
+    } as unknown as CompetitorReviewsFetcherService;
+
+    const orchestrator = new CompetitorAnalysisOrchestratorService(
+      core.client,
+      integration.client,
+      ai.client,
+      reviewsFetcher,
+    );
+
+    await orchestrator.generateForCompany('company-1', 'brand-1', 'user-1');
+
+    expect(callOrder).toEqual(['yandex-start', 'yandex-end', '2gis-start']);
+    const aiCall = ai.send.mock.calls[0][1] as {
+      competitors: { reviews: string[] }[];
+    };
+    expect(aiCall.competitors[0].reviews).toEqual([
+      'Яндекс-отзыв',
+      '2ГИС-отзыв',
+    ]);
   });
 });
 

@@ -140,7 +140,7 @@ export class CompetitorAnalysisOrchestratorService {
     );
 
     const ownReviews = ownYandexOrgId
-      ? await this.fetchReviewTexts(company.id, ownYandexOrgId)
+      ? await this.fetchYandexReviewTexts(company.id, ownYandexOrgId)
       : [];
 
     const competitorProfiles: Array<{
@@ -257,10 +257,27 @@ export class CompetitorAnalysisOrchestratorService {
     }
   }
 
+  // Оба провайдера скрапятся последовательно (не Promise.all) — каждый
+  // поднимает отдельный headless Chromium в map-parser, а параллелизм между
+  // конкурентами уже ограничен COMPETITOR_REVIEWS_CONCURRENCY. Последовательность
+  // здесь держит пиковое число одновременных Chromium на уровне этого лимита,
+  // не удваивая его на конкурента с обоими источниками (см.
+  // docs/refactor-plans/competitor-2gis-reviews.md).
   private async buildCompetitorProfile(c: CompetitorListingRef) {
     const yandexOrgId = this.findYandexSourceId(c.sources);
-    const reviews = yandexOrgId
-      ? await this.fetchReviewTexts(`competitor:${yandexOrgId}`, yandexOrgId)
+    const twoGisBranchId = this.findTwoGisSourceId(c.sources);
+
+    const yandexReviews = yandexOrgId
+      ? await this.fetchYandexReviewTexts(
+          `competitor:${yandexOrgId}`,
+          yandexOrgId,
+        )
+      : [];
+    const twoGisReviews = twoGisBranchId
+      ? await this.fetchTwoGisReviewTexts(
+          `competitor:${twoGisBranchId}`,
+          twoGisBranchId,
+        )
       : [];
 
     return {
@@ -269,7 +286,7 @@ export class CompetitorAnalysisOrchestratorService {
       category: c.categories?.[0],
       rating: c.rating,
       reviewCount: c.reviewCount,
-      reviews,
+      reviews: [...yandexReviews, ...twoGisReviews],
     };
   }
 
@@ -279,13 +296,32 @@ export class CompetitorAnalysisOrchestratorService {
     return sources?.find((s) => s.provider === 'yandex')?.id;
   }
 
-  private async fetchReviewTexts(
+  private findTwoGisSourceId(
+    sources: PlaceSourceRef[] | undefined,
+  ): string | undefined {
+    return sources?.find((s) => s.provider === '2gis')?.id;
+  }
+
+  private async fetchYandexReviewTexts(
     companyIdLabel: string,
     orgId: string,
   ): Promise<string[]> {
     const reviews = await this.reviewsFetcher.fetchYandexReviews(
       companyIdLabel,
       orgId,
+    );
+    return reviews
+      .map((r) => r.text)
+      .filter((text): text is string => Boolean(text));
+  }
+
+  private async fetchTwoGisReviewTexts(
+    companyIdLabel: string,
+    branchId: string,
+  ): Promise<string[]> {
+    const reviews = await this.reviewsFetcher.fetchTwoGisReviews(
+      companyIdLabel,
+      branchId,
     );
     return reviews
       .map((r) => r.text)
