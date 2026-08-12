@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppConfigModule } from '@geo/config';
 import { CoreServiceController } from './core-service.controller';
@@ -32,6 +33,10 @@ import { AddPositionCheckResults1750000013000 } from './migrations/1750000013000
 @Module({
   imports: [
     AppConfigModule,
+    // @nestjs/schedule — первая cron-зависимость в проекте (см.
+    // docs/refactor-plans/position-checker-retention.md). Регистрируется
+    // один раз на корневом модуле, как того требует ScheduleModule.
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
