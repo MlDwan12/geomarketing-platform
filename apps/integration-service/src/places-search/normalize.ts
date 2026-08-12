@@ -62,10 +62,12 @@ export function normalizeYandexItem(
     categories: meta?.Categories?.map((c) => c.name).filter((n): n is string =>
       Boolean(n),
     ),
-    // YandexOrgFeature.CompanyMetaData не содержит поля рейтинга в текущем
-    // типе — не проверено живым запросом, какое имя поля использует Яндекс
-    // (или используется ли оно вообще для type=biz). Не гадаем — rating/
-    // reviewCount остаются undefined, пока не подтверждено живьём.
+    // Подтверждено живым запросом (search-maps.yandex.ru/v1, type=biz) — в
+    // CompanyMetaData нет никакого поля рейтинга/отзывов вообще (только
+    // id/name/address/Address/url/Phones/Categories/Hours/Features). Это
+    // ограничение самого публичного API Яндекса, не пробел маппинга — rating/
+    // reviewCount останутся undefined для Яндекса всегда, пока не появится
+    // другой источник (например, скрапинг, как уже сделано для отзывов).
     sources: [{ provider: 'yandex', id: meta?.id ?? '', raw: feature }],
   };
 }
