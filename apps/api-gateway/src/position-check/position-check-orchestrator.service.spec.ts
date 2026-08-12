@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
 import { Patterns } from '@geo/contracts';
 import { PositionCheckOrchestratorService } from './position-check-orchestrator.service';
@@ -205,5 +205,131 @@ describe('PositionCheckOrchestratorService.checkPositions', () => {
     expect(saveCall.results).toEqual([
       { keyword: 'кофейня', provider: '2gis', position: 2, source: 'manual' },
     ]);
+  });
+});
+
+describe('PositionCheckOrchestratorService.checkPositionsForBrand', () => {
+  const companiesForListing = [{ id: 'c1' }, { id: 'c2' }];
+
+  it('проверяет каждую компанию бренда, полученную через COMPANY_LIST_FOR_VISIBILITY', async () => {
+    const core = fakeClient({
+      [Patterns.COMPANY_LIST_FOR_VISIBILITY]: companiesForListing,
+      [Patterns.COMPANY_GET]: companyWithoutCategory,
+      [Patterns.POSITION_KEYWORDS_LIST]: [{ keyword: 'кофейня' }],
+      [Patterns.POSITION_CHECK_SAVE]: [{ id: 'r1' }],
+    });
+    const integration = fakeClient({
+      [Patterns.POSITION_CHECK_FIND]: [
+        { keyword: 'кофейня', provider: '2gis', position: 1 },
+      ],
+    });
+    const orchestrator = new PositionCheckOrchestratorService(
+      core.client,
+      integration.client,
+    );
+
+    const results = await orchestrator.checkPositionsForBrand(
+      'brand-1',
+      'user-1',
+    );
+
+    expect(core.send).toHaveBeenCalledWith(
+      Patterns.COMPANY_LIST_FOR_VISIBILITY,
+      {
+        brandId: 'brand-1',
+        userId: 'user-1',
+      },
+    );
+    expect(results).toEqual([
+      { companyId: 'c1', success: true, results: [{ id: 'r1' }] },
+      { companyId: 'c2', success: true, results: [{ id: 'r1' }] },
+    ]);
+  });
+
+  it('одна компания упала — партиальный успех, остальные всё равно обрабатываются', async () => {
+    const send = jest.fn((pattern: string, payload: unknown) => {
+      if (pattern === Patterns.COMPANY_LIST_FOR_VISIBILITY) {
+        return of(companiesForListing);
+      }
+      if (pattern === Patterns.COMPANY_GET) {
+        const { companyId } = payload as { companyId: string };
+        if (companyId === 'c1') throw new Error('core-service недоступен');
+        return of({ ...companyWithoutCategory, id: companyId });
+      }
+      if (pattern === Patterns.POSITION_KEYWORDS_LIST) return of([]);
+      if (pattern === Patterns.POSITION_CHECK_SAVE) return of([]);
+      return of(undefined);
+    });
+    const core = { client: { send } as unknown as ClientProxy, send };
+    const integration = fakeClient({ [Patterns.POSITION_CHECK_FIND]: [] });
+    const orchestrator = new PositionCheckOrchestratorService(
+      core.client,
+      integration.client,
+    );
+
+    const results = await orchestrator.checkPositionsForBrand(
+      'brand-1',
+      'user-1',
+    );
+
+    expect(results).toEqual([
+      { companyId: 'c1', success: false, error: 'core-service недоступен' },
+      { companyId: 'c2', success: true, results: [] },
+    ]);
+  });
+
+  it('компания без ключевых слов и координат — success: true, results: [] (не ошибка)', async () => {
+    const core = fakeClient({
+      [Patterns.COMPANY_LIST_FOR_VISIBILITY]: [{ id: 'c1' }],
+      [Patterns.COMPANY_GET]: { ...companyWithoutCategory, coordinates: null },
+      [Patterns.POSITION_KEYWORDS_LIST]: [],
+    });
+    const integration = fakeClient({});
+    const orchestrator = new PositionCheckOrchestratorService(
+      core.client,
+      integration.client,
+    );
+
+    const results = await orchestrator.checkPositionsForBrand(
+      'brand-1',
+      'user-1',
+    );
+
+    expect(results).toEqual([{ companyId: 'c1', success: true, results: [] }]);
+    expect(integration.send).not.toHaveBeenCalled();
+  });
+
+  it('батчи по BRAND_BATCH_CONCURRENCY=5 — 6-я компания не стартует, пока не освободится слот', async () => {
+    const companies = Array.from({ length: 6 }, (_, i) => ({ id: `c${i}` }));
+    let current = 0;
+    let maxConcurrent = 0;
+    const send = jest.fn((pattern: string) => {
+      if (pattern === Patterns.COMPANY_LIST_FOR_VISIBILITY) {
+        return of(companies);
+      }
+      if (pattern === Patterns.COMPANY_GET) {
+        current += 1;
+        maxConcurrent = Math.max(maxConcurrent, current);
+        return new Observable((subscriber) => {
+          setTimeout(() => {
+            current -= 1;
+            subscriber.next(companyWithoutCategory);
+            subscriber.complete();
+          }, 5);
+        });
+      }
+      if (pattern === Patterns.POSITION_KEYWORDS_LIST) return of([]);
+      return of(undefined);
+    });
+    const core = { client: { send } as unknown as ClientProxy, send };
+    const integration = fakeClient({});
+    const orchestrator = new PositionCheckOrchestratorService(
+      core.client,
+      integration.client,
+    );
+
+    await orchestrator.checkPositionsForBrand('brand-1', 'user-1');
+
+    expect(maxConcurrent).toBeLessThanOrEqual(5);
   });
 });
